@@ -1,7 +1,5 @@
 #############################################################################################
-#
-#       esp_fmb630 - software emulator Teltonika FMB630 device on ESP32 platform
-#
+##     esp_fmb630 - software emulator Teltonika FMB630 device on ESP32 platform
 #############################################################################################
 
 
@@ -29,7 +27,7 @@
 * conf.txt       - файл конфигурации режима/сценария работы устройства (размещается на sdcard)
 
 
-##Требуемые компоненты:
+## Требуемые компоненты:
 
 ```
 - Cross compiler xtensa-esp32-elf (http://esp-idf-fork.readthedocs.io/en/stable/linux-setup.html#step-0-prerequisites)
@@ -158,7 +156,7 @@ location=54.699680,20.514002
 ```
 
 
-## P.S.
+### P.S.
 ```
 * 'nc ip_addr_device 8008' - getting logs in realtime from linux command line
 
