@@ -7,7 +7,7 @@
 
 
 #define DEF_GPS_PORT 9900
-#define DEF_GPS_ADDR "192.168.0.101"
+#define DEF_GPS_ADDR "92.53.65.4"//"192.168.0.101"
 #define buf_size 4096
 #define size_imei 15
 #define im_len 0x0f00

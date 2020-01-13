@@ -136,8 +136,14 @@
 #define BUF_SIZE 1024
 
 //***********************************************************************
-#define GPIO_WIFI_PIN    4//17
-#define GPIO_WMODE_PIN   15//16  //1-STA  0-AP
+
+#define LED_ON  1
+#define LED_OFF 0
+
+#define GPIO_LOG_PIN     17 //log_server started
+#define GPIO_GPS_PIN     16 //fmb630_client connect to server
+#define GPIO_WIFI_PIN     4
+#define GPIO_WMODE_PIN   15  //1-STA  0-AP
 
 #define ADC1_TEST_CHANNEL (6) //6 channel connect to pin34
 #define ADC1_TEST_PIN    34 //pin34

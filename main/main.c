@@ -471,6 +471,17 @@ void app_main()
 
     //--------------------------------------------------------
 
+    gpio_pad_select_gpio(GPIO_LOG_PIN);
+    gpio_pad_pullup(GPIO_LOG_PIN);
+    gpio_set_direction(GPIO_LOG_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level(GPIO_LOG_PIN, LED_OFF);
+    //
+    gpio_pad_select_gpio(GPIO_GPS_PIN);
+    gpio_pad_pullup(GPIO_GPS_PIN);
+    gpio_set_direction(GPIO_GPS_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level(GPIO_GPS_PIN, LED_OFF);
+
+    //--------------------------------------------------------
 
     bool rt = check_pin(GPIO_WIFI_PIN);//pin17
     if (!rt) ets_printf("[%s] === CHECK_WIFI_REWRITE_PIN %d LEVEL IS %d ===\n", TAGT, GPIO_WIFI_PIN, rt);
@@ -747,8 +758,8 @@ void app_main()
         gps_ini.port = DEF_GPS_PORT;//9900;//uint16_t port;//9090
         memcpy(gps_ini.imei, "351580051430040", size_imei);//char imei[size_imei];//"imei=",//351580051430037
         gps_ini.mode = 0;//uint8_t mode;//"mode="//0
-        gps_ini.snd_park = 60;//int snd_park;//"period_park="//30
-        gps_ini.snd_move = 5;//int snd_move;//"period_move="//10
+        gps_ini.snd_park = 30;//int snd_park;//"period_park="//30
+        gps_ini.snd_move = 10;//int snd_move;//"period_move="//10
         gps_ini.wait_ack = 15;//int wait_ack;//"wait_ack="//15
         gps_ini.wait_before_new_connect = 10;//int wait_before_new_connect;//"wait_before_new_connect=",//3
         //    0x209A9758,//0x0342A682,//North Latitude: 54.699650

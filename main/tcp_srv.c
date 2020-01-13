@@ -141,6 +141,7 @@ char stx[64];
             if (tcpCli >= 0) {
                 fcntl(tcpCli, F_SETFL, (fcntl(tcpCli, F_GETFL, 0)) | O_NONBLOCK);
                 strcpy(log_cli_ip_addr, (char *)inet_ntoa(client_addr.sin_addr));
+                gpio_set_level(GPIO_LOG_PIN, LED_ON);//0 //led ON
                 print_msg(1, TAGLOG, "New log_client %s:%u (soc=%u) online | FreeMem %u\n",
                            log_cli_ip_addr,
                            htons(client_addr.sin_port),
@@ -157,6 +158,8 @@ char stx[64];
                     vTaskDelay(100 / portTICK_PERIOD_MS);
                 }
                 res = 0;
+                gpio_set_level(GPIO_LOG_PIN, LED_OFF);//1 //led OFF
+
                 print_msg(1, TAGLOG, "Closed connection. Wait new tcp client... | FreeMem %u\n", xPortGetFreeHeapSize());
                 memset(log_cli_ip_addr, 0, sizeof(log_cli_ip_addr));
                 ssd1306_clear_line(7); ssd1306_clear_line(8);
