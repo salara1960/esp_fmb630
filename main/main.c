@@ -15,14 +15,14 @@ static const char *TAGN = "NVS";
 static const char *TAGT = "VFS";
 static const char *TAGW = "WIFI";
 #ifdef SET_SDCARD
-static const char *TAGFAT = "FAT";
+static const char *TAGFAT = "CARD";
 #endif
 static const char *sdPath = "/sdcard";
 static const char *sdConf = "conf.txt";
 static esp_err_t mntOK = ESP_FAIL;
 
 #ifdef SET_FATDISK
-static const char *TAGFATD = "FATD";
+static const char *TAGFATD = "DISK";
 static const char *diskPath = "/spiflash";
 static const char *diskPart = "disk";
 static wl_handle_t s_wl_handle = -1;//WL_INVALID_HANDLE;
@@ -450,10 +450,10 @@ bool ret = false;
         if (tmp) {
             uint32_t kol = 0;
             while ( (de = readdir(dir)) != NULL ) {
+                if (strcasestr(de->d_name, sdConf)) ret = true;//conf.txt present !!!
                 sprintf(tmp, "%s/%s", dir_name, de->d_name);
                 print_msg(0, NULL, "\tfile: type=%d name='%s' size=%d\n", de->d_type, de->d_name, get_file_size(tmp));
                 seekdir(dir, ++kol);
-                if (strstr(de->d_name, sdConf)) ret = true;//conf.txt present !!!
             }
             free(tmp);
         }
@@ -471,8 +471,8 @@ int ret = -1;
         if (f) {
             ret = fwrite(buf, 1, len, f);
             fclose(f);
-            ets_printf("[%s] Write file '%s' (write %d bytes)\n", tag, full_filename, ret);
-        } else ets_printf(TAGFAT, "[%s] Failed to open file '%s' for writing", tag, full_filename);
+            print_msg(1, tag, "Write file '%s' OK (%d bytes)\n", full_filename, ret);
+        } else print_msg(1, tag, "Failed to open file '%s' for writing\n", full_filename);
     }
 
     return ret;
@@ -494,11 +494,11 @@ int rx = 0;
                     rx = fread(buf, 1, len, f);
                     fclose(f);
                     ret = buf;
-                    if (rx != len) ets_printf("[%s] Read file '%s' Error (%d)\n", tag, full_filename, rx);
-                              else ets_printf("[%s] Read file '%s' OK (%d)\n", tag, full_filename, rx);
+                    if (rx != len) print_msg(1, tag, "Read file '%s' Error (%d)\n", full_filename, rx);
+                              else print_msg(1, tag, "Read file '%s' OK (%d bytes)\n", full_filename, rx);
                 } else {
                     free(buf);
-                    ets_printf(TAGFAT, "[%s] Failed to open file '%s' for reading", tag, full_filename);
+                    print_msg(1, tag, "Failed to open file '%s' for reading\n", full_filename);
                 }
             }
         }
@@ -709,6 +709,18 @@ void app_main()
 #endif
 
 
+#ifdef SET_SNTP
+    if (wmode & 1) {// WIFI_MODE_STA) || WIFI_MODE_APSTA
+        if (xTaskCreatePinnedToCore(&sntp_task, "sntp_task", STACK_SIZE_2K, work_sntp, 5, NULL, 0) != pdPASS) {//7,NULL,1
+            #ifdef SET_ERROR_PRINT
+                ESP_LOGE(TAGS, "Create sntp_task failed | FreeMem %u", xPortGetFreeHeapSize());
+            #endif
+        }
+        //vTaskDelay(1000 / portTICK_RATE_MS);
+    }
+#endif
+
+
 #ifdef SET_NET_LOG
     msgq = xQueueCreate(8, sizeof(s_net_msg));//create msg queue
 
@@ -720,17 +732,6 @@ void app_main()
     vTaskDelay(1000 / portTICK_RATE_MS);
 #endif
 
-
-#ifdef SET_SNTP
-    if (wmode & 1) {// WIFI_MODE_STA) || WIFI_MODE_APSTA
-        if (xTaskCreatePinnedToCore(&sntp_task, "sntp_task", STACK_SIZE_2K, work_sntp, 5, NULL, 0) != pdPASS) {//7,NULL,1
-            #ifdef SET_ERROR_PRINT
-                ESP_LOGE(TAGS, "Create sntp_task failed | FreeMem %u", xPortGetFreeHeapSize());
-            #endif
-        }
-        vTaskDelay(1000 / portTICK_RATE_MS);
-    }
-#endif
 
 //*****************************************************************************************************
 
@@ -756,28 +757,19 @@ void app_main()
     mntOK = esp_vfs_fat_sdmmc_mount(sdPath, &host, &slot_config, &mount_config, &card);
 
     if (mntOK != ESP_OK) {
-        if (mntOK == ESP_FAIL) {
-            print_msg(1, TAGFAT, "Failed to mount filesystem on sdcard.\n");
-        } else {
-            print_msg(1, TAGFAT,  "Failed to initialize the sdcard (%s). ", esp_err_to_name(err));
-        }
+        if (mntOK == ESP_FAIL) print_msg(1, TAGFAT, "Failed to mount filesystem on sdcard.\n");
+                          else print_msg(1, TAGFAT, "Failed to initialize the sdcard\n");
     } else print_msg(1, TAGFAT, "Mount %s OK | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
 
     if (mntOK == ESP_OK) {
         sdmmc_card_print_info(stdout, card);
         //
         sprintf(line, "%s/", sdPath);
-        bool cpt = print_dir(TAGFAT, line);
-
-        if (cpt) {// read /sdcard/conf.txt if file present
+        if (print_dir(TAGFAT, line)) {// read /sdcard/conf.txt if file present
             strcat(line, sdConf);
             int rxlen = 0;
             txtConf = rdFile(mntOK, TAGFAT, line, &rxlen);
-            if (txtConf && (rxlen > 0)) {
-                print_msg(1, TAGFAT, "Read file %s (%d) | FreeMem %u\n", line, rxlen, xPortGetFreeHeapSize());
-                ets_printf("%s\n", txtConf);
-            }
-        }
+        } else print_msg(1, TAGFAT, "Configuration file %s%s NOT present | FreeMem %u\n", line, sdConf, xPortGetFreeHeapSize());
     }
 
 #endif
@@ -798,40 +790,26 @@ void app_main()
     }
 
     if (diskOK == ESP_OK) {
-        sprintf(line, "%s/", diskPath);
-        bool cfgYes = print_dir(TAGFATD, line);
+        bool delit = check_pin(GPIO_DELIT_PIN);
+        print_msg(1, TAGFATD, "=== GPIO_DELIT_PIN(%d)=%d ===\n", GPIO_DELIT_PIN, delit);
 
-        if (txtConf && !cfgYes) {//write conf.txt to /spiflash
-            strcat(line, sdConf);
-            int wrlen = wrFile(diskOK, TAGFATD, line, txtConf, strlen(txtConf));
-            if (wrlen == strlen(txtConf)) print_msg(1, TAGFATD, "Write file '%s' done (size=%u)\n", line, wrlen);
+        sprintf(line, "%s/", diskPath);
+        bool yes = print_dir(TAGFATD, line);
+        strcat(line, sdConf);
+        if (!delit) unlink(line);//delete /spiflash/con.txt
+        else if (txtConf && !yes) {//write conf.txt to /spiflash
+            int rxlen = strlen(txtConf);
+            wrFile(diskOK, TAGFATD, line, txtConf, rxlen);
 
             sprintf(line, "%s/", diskPath);
             print_dir(TAGFATD, line);
         }
-
-/*        vTaskDelay(500 / portTICK_RATE_MS);
-        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
-        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
-        diskOK = ESP_FAIL;*/
     }
 
     if (txtConf) free(txtConf);
 
 #endif
 //*****************************************************************************************************
-
-
-#ifdef SET_TLS_SRV
-    if (xTaskCreatePinnedToCore(&tls_task, "tls_task", 8*STACK_SIZE_1K, &tls_port, 8, NULL, 0) != pdPASS) {//6,NULL,1)
-        #ifdef SET_ERROR_PRINT
-            ESP_LOGE(TAGTLS, "Create tls_task failed | FreeMem %u", xPortGetFreeHeapSize());
-        #endif
-    }
-    vTaskDelay(1000 / portTICK_RATE_MS);
-    static uint8_t screen = 0;
-#endif
-
 
 #ifdef SET_FMB630
     rec_mutex    = xSemaphoreCreateMutex();
@@ -844,18 +822,21 @@ void app_main()
 
     if (diskOK == ESP_OK) {
         sprintf(line, "%s/%s", diskPath, sdConf);
-        cfgErr = read_cfg(&gps_ini, line, 1);
+        cfgErr = read_cfg(&gps_ini, line, 0);
 
         esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
         print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
         diskOK = ESP_FAIL;
-    } else if (mntOK == ESP_OK) {
-        sprintf(line, "%s/%s", sdPath, sdConf);
-        cfgErr = read_cfg(&gps_ini, line, 1);
+    }
+    if (cfgErr) {
+        if (mntOK == ESP_OK) {
+            sprintf(line, "%s/%s", sdPath, sdConf);
+            cfgErr = read_cfg(&gps_ini, line, 0);
 
-        esp_vfs_fat_sdmmc_unmount();
-        print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
-        mntOK = ESP_FAIL;
+            esp_vfs_fat_sdmmc_unmount();
+            print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
+            mntOK = ESP_FAIL;
+        }
     }
     if (cfgErr) {
         strcpy(gps_ini.srv, DEF_GPS_ADDR);//char srv[max_url_len];//"server=",//92.53.65.4
@@ -874,20 +855,38 @@ void app_main()
         gps_ini.longitude = lonf * 10000000;//0x013904D0;//uint32_t longitude;// долгота
     }
 
-    if (xTaskCreatePinnedToCore(&fmb630_task, "fmb630_task", 10*STACK_SIZE_1K, &gps_ini, 9, NULL, 0) != pdPASS) {
+    if (xTaskCreatePinnedToCore(&fmb630_task, "fmb630_task", 8*STACK_SIZE_1K, &gps_ini, 9, NULL, 0) != pdPASS) {
         #ifdef SET_ERROR_PRINT
             ESP_LOGE(TAGGPS, "Create fmb630_task failed | FreeMem %u", xPortGetFreeHeapSize());
         #endif
     }
-    vTaskDelay(1000 / portTICK_RATE_MS);
-#else
-    #ifdef SET_SDCARD
-        if (mntOK == ESP_OK) {
-            esp_vfs_fat_sdmmc_unmount();
-            print_msg(1, TAGFAT, "SD Card %s unmounted | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
-            mntOK = ESP_FAIL;
-        }
-    #endif
+    //vTaskDelay(1000 / portTICK_RATE_MS);
+#endif
+
+#ifdef SET_SDCARD
+    if (mntOK == ESP_OK) {
+        esp_vfs_fat_sdmmc_unmount();
+        print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
+        mntOK = ESP_FAIL;
+    }
+#endif
+#ifdef SET_FATDISK
+    if (diskOK == ESP_OK) {
+        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
+        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
+        diskOK = ESP_FAIL;
+    }
+#endif
+
+
+#ifdef SET_TLS_SRV
+    if (xTaskCreatePinnedToCore(&tls_task, "tls_task", 8*STACK_SIZE_1K, &tls_port, 8, NULL, 0) != pdPASS) {//6,NULL,1)
+        #ifdef SET_ERROR_PRINT
+            ESP_LOGE(TAGTLS, "Create tls_task failed | FreeMem %u", xPortGetFreeHeapSize());
+        #endif
+    }
+    vTaskDelay(500 / portTICK_RATE_MS);
+    static uint8_t screen = 0;
 #endif
 
 

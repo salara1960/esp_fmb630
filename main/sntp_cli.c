@@ -22,7 +22,7 @@ total_task++;
 
         time_t now = 0;
         struct tm timeinfo = {0};
-        uint8_t retry = 0, retry_max = 20;
+        uint8_t retry = 0, retry_max = 30;
 
         xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
 

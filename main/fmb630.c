@@ -423,7 +423,7 @@ char *buf = NULL, *tmp = NULL, *chap = NULL;
     chap = (char *)calloc(1, DLN); if (!chap) goto outlab;
 
     if ((fp = fopen(fn, "r"))) {
-        if (prn) print_msg(1, TAGGPS, "Configuration file '%s' present:\n", fn);
+        print_msg(1, TAGGPS, "Configuration file '%s' present:\n", fn);
         //memset((uint8_t *)&cnf, 0, sizeof(s_conf));
 
         while (fgets(buf, DLN - 1, fp) != NULL) {
