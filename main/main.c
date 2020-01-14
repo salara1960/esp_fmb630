@@ -21,6 +21,19 @@ static const char *sdPath = "/sdcard";
 static const char *sdConf = "conf.txt";
 static esp_err_t mntOK = ESP_FAIL;
 
+#ifdef SET_FATDISK
+static const char *TAGFATD = "FATD";
+static const char *diskPath = "/spiflash";
+static const char *diskPart = "disk";
+static wl_handle_t s_wl_handle = -1;//WL_INVALID_HANDLE;
+static size_t fatfs_size = 0;
+static esp_err_t diskOK = ESP_FAIL;
+#endif
+
+#if defined(SET_SDCARD) || defined(SET_FATDISK)
+    char *txtConf = NULL;
+#endif
+
 static const char *wmode_name[] = {"NULL", "STA", "AP", "APSTA", "MAX"};
 static uint8_t wmode = WIFI_MODE_STA;
 static unsigned char wifi_param_ready = 0;
@@ -416,20 +429,82 @@ float get_tChip()
     return (((temprature_sens_read() - 40) - 32) * 5/9);
 }
 //------------------------------------------------------------------------------------------------------------
-#ifdef SET_SDCARD
-int get_file_size(const char *filename)
+#if defined(SET_SDCARD) || defined(SET_FATDISK)
+static int get_file_size(const char *full_filename)
+{
+    struct stat sta;
+    stat(full_filename, &sta);
+
+    return sta.st_size;
+}
+//---------------------------------------------------
+static bool print_dir(const char *tag, const char *dir_name)
+{
+bool ret = false;
+
+    print_msg(1, tag, "Open DIR '%s':\n", dir_name);
+    struct dirent *de = NULL;
+    DIR *dir = opendir(dir_name);
+    if (dir) {
+        char *tmp = (char *)calloc(1, 384);
+        if (tmp) {
+            uint32_t kol = 0;
+            while ( (de = readdir(dir)) != NULL ) {
+                sprintf(tmp, "%s/%s", dir_name, de->d_name);
+                print_msg(0, NULL, "\tfile: type=%d name='%s' size=%d\n", de->d_type, de->d_name, get_file_size(tmp));
+                seekdir(dir, ++kol);
+                if (strstr(de->d_name, sdConf)) ret = true;//conf.txt present !!!
+            }
+            free(tmp);
+        }
+    } else print_msg(1, tag, "Open DIR '%s' Error | FreeMem %u", dir_name, xPortGetFreeHeapSize());
+
+    return ret;
+}
+//---------------------------------------------------
+static int wrFile(esp_err_t mnt, const char *tag, const char *full_filename, const char *buf, int len)
 {
 int ret = -1;
 
-    char *nm = (char *)calloc(1, strlen(sdPath) + strlen(filename) + 3);
-    if (nm) {
-        sprintf(nm, "%s/%s", sdPath, filename);
-        struct stat sta;
-        stat(nm, &sta);
-        ret = sta.st_size;
-        free(nm);
+    if (mnt == ESP_OK) {
+        FILE *f = fopen(full_filename, "w+");
+        if (f) {
+            ret = fwrite(buf, 1, len, f);
+            fclose(f);
+            ets_printf("[%s] Write file '%s' (write %d bytes)\n", tag, full_filename, ret);
+        } else ets_printf(TAGFAT, "[%s] Failed to open file '%s' for writing", tag, full_filename);
     }
 
+    return ret;
+}
+//---------------------------------------------------
+static char *rdFile(esp_err_t mnt, const char *tag, const char *full_filename, int *rd)
+{
+char *ret = NULL;
+int rx = 0;
+
+    if (mnt == ESP_OK) {
+        int len = get_file_size(full_filename);
+        if (len > 0) {
+            if (len > len2k - 1) len = len2k - 1;
+            char *buf = (char *)calloc(1, len2k);
+            if (buf) {
+                FILE *f = fopen(full_filename, "r");
+                if (f) {
+                    rx = fread(buf, 1, len, f);
+                    fclose(f);
+                    ret = buf;
+                    if (rx != len) ets_printf("[%s] Read file '%s' Error (%d)\n", tag, full_filename, rx);
+                              else ets_printf("[%s] Read file '%s' OK (%d)\n", tag, full_filename, rx);
+                } else {
+                    free(buf);
+                    ets_printf(TAGFAT, "[%s] Failed to open file '%s' for reading", tag, full_filename);
+                }
+            }
+        }
+    }
+
+    *rd = rx;
     return ret;
 }
 #endif
@@ -438,11 +513,11 @@ void app_main()
 {
 
     total_task = 0;
-    char line[256];
+    char line[288];
 
     vTaskDelay(1500 / portTICK_RATE_MS);
 
-    ets_printf("\nApp version %s | SDK Version %s | FreeMem %u\n", Version, esp_get_idf_version(), xPortGetFreeHeapSize());
+    //ets_printf("\nApp version %s | SDK Version %s | FreeMem %u\n", Version, esp_get_idf_version(), xPortGetFreeHeapSize());
 
     esp_err_t err = nvs_flash_init();
     if (err != ESP_OK) {
@@ -464,6 +539,8 @@ void app_main()
         memcpy(&cli_id, &macs[2], 4);
         cli_id = ntohl(cli_id);
     }
+
+    ets_printf("\nApp version %s | MAC %s | SDK Version %s | FreeMem %u\n", Version, sta_mac, esp_get_idf_version(), xPortGetFreeHeapSize());
 
     //--------------------------------------------------------
 
@@ -656,6 +733,7 @@ void app_main()
 #endif
 
 //*****************************************************************************************************
+
 #ifdef SET_SDCARD
 
     vTaskDelay(2000 / portTICK_RATE_MS);
@@ -671,7 +749,7 @@ void app_main()
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
         .max_files = 5,
-        .allocation_unit_size = 16 * 1024
+        .allocation_unit_size = 8 * 1024 //16 * 1024
     };
 
     sdmmc_card_t *card;
@@ -679,52 +757,70 @@ void app_main()
 
     if (mntOK != ESP_OK) {
         if (mntOK == ESP_FAIL) {
-            print_msg(1, TAGFAT, "Failed to mount filesystem.\n");
+            print_msg(1, TAGFAT, "Failed to mount filesystem on sdcard.\n");
         } else {
-            print_msg(1, TAGFAT,  "Failed to initialize the card (%s). "
-                "Make sure SD card lines have pull-up resistors in place.", esp_err_to_name(err));
+            print_msg(1, TAGFAT,  "Failed to initialize the sdcard (%s). ", esp_err_to_name(err));
         }
-    } else ets_printf("[%s] Mount %s OK | FreeMem %u\n", TAGFAT, sdPath, xPortGetFreeHeapSize());
+    } else print_msg(1, TAGFAT, "Mount %s OK | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
 
     if (mntOK == ESP_OK) {
         sdmmc_card_print_info(stdout, card);
         //
         sprintf(line, "%s/", sdPath);
-        print_msg(1, TAGFAT, "Open DIR '%s':\n", line);
-        struct dirent *de = NULL;
-        DIR *dir = opendir(line);
-        uint32_t kol = 0;
-        if (dir) {
-            //rewinddir(dir);
-            while ( (de = readdir(dir)) != NULL ) {
-                print_msg(0, NULL, "\tfile: type=%d name='%s' size=%d\n", de->d_type, de->d_name, get_file_size(de->d_name));
-                seekdir(dir, ++kol);
+        bool cpt = print_dir(TAGFAT, line);
+
+        if (cpt) {// read /sdcard/conf.txt if file present
+            strcat(line, sdConf);
+            int rxlen = 0;
+            txtConf = rdFile(mntOK, TAGFAT, line, &rxlen);
+            if (txtConf && (rxlen > 0)) {
+                print_msg(1, TAGFAT, "Read file %s (%d) | FreeMem %u\n", line, rxlen, xPortGetFreeHeapSize());
+                ets_printf("%s\n", txtConf);
             }
-        } else print_msg(1, TAGFAT, "Open DIR '%s' Error | FreeMem %u", line, xPortGetFreeHeapSize());
-        //
-/*        sprintf(line, "%s/%s", sdPath, sdConf);
-        print_msg(1, TAGFAT, "Reading file %s :\n", line);
-        FILE *fil = fopen(line, "r");
-        if (fil) {
-            char *st = (char *)calloc(1, 2048);
-            if (st) {
-                kol = 0;
-                while(fgets(line, sizeof(line) - 1, fil) != NULL) {
-                    if (kol + strlen(line) < 2047) kol = sprintf(st+strlen(st), "%s", line);
-                }
-                print_msg(0, NULL, "%s\n", st);
-                free(st);
-            }
-            fclose(fil);
-        } else print_msg(1, TAGFAT, "Failed to open file %s for reading\n", line);
-*/
-//        esp_vfs_fat_sdmmc_unmount();
-//        print_msg(1, TAGFAT, "SD Card %s unmounted | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
-//        vTaskDelay(1000 / portTICK_RATE_MS);
+        }
     }
 
 #endif
 //*****************************************************************************************************
+#ifdef SET_FATDISK
+
+    const esp_vfs_fat_mount_config_t mount_disk = {
+        .max_files = 5,
+        .format_if_mount_failed = false
+    };
+
+    diskOK = esp_vfs_fat_spiflash_mount(diskPath, diskPart, &mount_disk, &s_wl_handle);
+    if (diskOK != ESP_OK) {
+        print_msg(1, TAGFATD, "Failed to mount FATFS partition '%s' on device '%s' (0x%x)", diskPart, diskPath, diskOK);
+    } else {
+        fatfs_size = wl_size(s_wl_handle);
+        print_msg(1, TAGFATD, "Mount FATFS partition '%s' on device '%s' OK (size=%u)\n", diskPart, diskPath, fatfs_size);
+    }
+
+    if (diskOK == ESP_OK) {
+        sprintf(line, "%s/", diskPath);
+        bool cfgYes = print_dir(TAGFATD, line);
+
+        if (txtConf && !cfgYes) {//write conf.txt to /spiflash
+            strcat(line, sdConf);
+            int wrlen = wrFile(diskOK, TAGFATD, line, txtConf, strlen(txtConf));
+            if (wrlen == strlen(txtConf)) print_msg(1, TAGFATD, "Write file '%s' done (size=%u)\n", line, wrlen);
+
+            sprintf(line, "%s/", diskPath);
+            print_dir(TAGFATD, line);
+        }
+
+/*        vTaskDelay(500 / portTICK_RATE_MS);
+        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
+        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
+        diskOK = ESP_FAIL;*/
+    }
+
+    if (txtConf) free(txtConf);
+
+#endif
+//*****************************************************************************************************
+
 
 #ifdef SET_TLS_SRV
     if (xTaskCreatePinnedToCore(&tls_task, "tls_task", 8*STACK_SIZE_1K, &tls_port, 8, NULL, 0) != pdPASS) {//6,NULL,1)
@@ -745,12 +841,20 @@ void app_main()
     memset(&gps_ini, 0, sizeof(s_conf));
     //
     int cfgErr = 1;
-    if (mntOK == ESP_OK) {
+
+    if (diskOK == ESP_OK) {
+        sprintf(line, "%s/%s", diskPath, sdConf);
+        cfgErr = read_cfg(&gps_ini, line, 1);
+
+        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
+        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
+        diskOK = ESP_FAIL;
+    } else if (mntOK == ESP_OK) {
         sprintf(line, "%s/%s", sdPath, sdConf);
         cfgErr = read_cfg(&gps_ini, line, 1);
 
         esp_vfs_fat_sdmmc_unmount();
-        print_msg(1, TAGFAT, "SD Card %s unmounted | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
+        print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
         mntOK = ESP_FAIL;
     }
     if (cfgErr) {
@@ -864,6 +968,21 @@ void app_main()
     }
     ets_printf("[%s] (%02d) DONE. Total unclosed task %d\n", TAG, cnt, total_task);
 
+    // UMOUNT ALL
+#ifdef SET_FATDISK
+    if (diskOK == ESP_OK) {
+        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
+        ets_printf("[%s] Unmounted FAT filesystem partition '%s' | FreeMem %u\n", TAGFATD, diskPart, xPortGetFreeHeapSize());
+        diskOK = ESP_FAIL;
+    }
+#endif
+#ifdef SET_SDCARD
+    if (mntOK == ESP_OK) {
+        esp_vfs_fat_sdmmc_unmount();
+        ets_printf("[%s] Unmounted FAT filesystem on '%s' | FreeMem %u\n", TAGFAT, sdPath, xPortGetFreeHeapSize());
+        mntOK = ESP_FAIL;
+    }
+#endif
 
     if (macs) free(macs);
 

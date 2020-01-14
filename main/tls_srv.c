@@ -255,6 +255,13 @@ float tChip = get_tChip();
                         timeout = timeout_max;
                         mbedtls_ssl_conf_read_timeout(&conf, timeout);
                     }
+                } else {
+                    auk = strstr(buf, "cmd\":\"RESTART\"");
+                    if (auk) {
+                        timeout = timeout_max;
+                        mbedtls_ssl_conf_read_timeout(&conf, timeout);
+                        restart_flag = 1;
+                    }
                 }
                 //------------------------------------------------------------------------
                 err = 0;
@@ -281,30 +288,32 @@ float tChip = get_tChip();
                 } else break;
             }
 
-            // Write
-            memset(tbuf, 0, BUF_SIZE);
-            if (auth) {
-                //
-                vcc = (float)get_vcc(); vcc /= 1000;
-                tChip = get_tChip();
-                //
-                vTaskDelay(100 / portTICK_RATE_MS);
-                len = sprintf(tbuf, "{\"DevID\":\"%08X\",\"Time\":%u,\"FreeMem\":%u,\"cli\":\"%s\",\"Vcc\":%.3f,\"Temp\":%.2f}\r\n",
-                             cli_id, (uint32_t)time(NULL), xPortGetFreeHeapSize(), tls_cli_ip_addr, vcc, tChip);
-            } else len = sprintf(tbuf, "{\"status\":\"You are NOT auth. client, bye\"}\r\n");
+            if (!restart_flag) {
+        	// Write
+        	memset(tbuf, 0, BUF_SIZE);
+        	if (auth) {
+            	    //
+            	    vcc = (float)get_vcc(); vcc /= 1000;
+            	    tChip = get_tChip();
+            	    //
+            	    vTaskDelay(100 / portTICK_RATE_MS);
+            	    len = sprintf(tbuf, "{\"DevID\":\"%08X\",\"Time\":%u,\"FreeMem\":%u,\"cli\":\"%s\",\"Vcc\":%.3f,\"Temp\":%.2f}\r\n",
+                                        cli_id, (uint32_t)time(NULL), xPortGetFreeHeapSize(), tls_cli_ip_addr, vcc, tChip);
+        	} else len = sprintf(tbuf, "{\"status\":\"You are NOT auth. client, bye\"}\r\n");
 
-            if (len) {
-                while ((ret = mbedtls_ssl_write(&ssl, (unsigned char *)tbuf, len)) <= 0) {
-                    if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
-                        ESP_LOGE(TAGTLS," failed ! mbedtls_ssl_write returned %d", ret);
-                        err = ret;
-                        break;
-                    }
-                }
-                print_msg(1, TAGTLS, "%s", tbuf);
-            }
-            if (!auth || eot) break;
-            vTaskDelay(10 / portTICK_RATE_MS);
+        	if (len) {
+            	    while ((ret = mbedtls_ssl_write(&ssl, (unsigned char *)tbuf, len)) <= 0) {
+                	if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+                    	    ESP_LOGE(TAGTLS," failed ! mbedtls_ssl_write returned %d", ret);
+                    	    err = ret;
+                    	    break;
+                	}
+            	    }
+            	    print_msg(1, TAGTLS, "%s", tbuf);
+        	}
+        	if (!auth || eot) break;
+        	vTaskDelay(10 / portTICK_RATE_MS);
+	    }
         }//while (!tls_hangup...)
 
 

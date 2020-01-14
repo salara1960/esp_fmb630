@@ -1,6 +1,7 @@
 #undef UDP_SEND_BCAST
-#undef SET_TLS_SRV
 
+//#define SET_TLS_SRV
+#define SET_FATDISK
 #define SET_FMB630
 #define SET_SDCARD
 #define SET_NET_LOG
