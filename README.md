@@ -1,7 +1,5 @@
 #############################################################################################
-#
-#       esp_fmb630 - software emulator Teltonika FMB630 device on ESP32 platform
-#
+##       esp_fmb630 - software emulator Teltonika FMB630 device on ESP32 platform
 #############################################################################################
 
 
@@ -29,7 +27,7 @@
 * conf.txt       - файл конфигурации режима/сценария работы устройства (размещается на sdcard)
 
 
-##Требуемые компоненты:
+## Требуемые компоненты:
 
 ```
 - Cross compiler xtensa-esp32-elf (http://esp-idf-fork.readthedocs.io/en/stable/linux-setup.html#step-0-prerequisites)
@@ -44,6 +42,23 @@ make menuconfig - конфигурация проекта
 make app        - компиляция проекта
 
 make flash      - запись бинарного кода проекта в dataflash
+
+
+## Поддерживаемые команды:
+
+```
+- "getgps",        //{"command":0}
+- "deleterecords", //{"command":29}
+- "getver",        //{"command":20}
+- "getio",         //{"command":15}
+- "SET_ALL",       //{"command":48,"param":"X1,Y1 X2,Y2 X3,Y3 X4,Y4 X5,Y5 X6,Y6 X7,Y7 X8,Y8"}
+- "GET_STAT",      //{"command":35}
+- "setdigout",     // 1XXX 0 0 0 0",//{"command":1, "relay":1, "time":0}
+- "setdigout",     // 0XXX 0 0 0 0",//{"command":2, "relay":1, "time":0}
+- "#DO REPORT",    //{"command":40}
+- "SET_ON",        //{"command":33, "relay":X, "time":Y}
+- "SET_OFF"        //{"command":34, "relay":X}
+```
 
 
 ## Пример логов при работе модуля :
