@@ -48,16 +48,17 @@ make flash      - запись бинарного кода проекта в dat
 
 ```
 - "getgps",        //{"command":0}
-- "deleterecords", //{"command":29}
-- "getver",        //{"command":20}
+- "setdigout",     //{"command":1, "relay":1, "time":0} // 1XXX 0 0 0 0"
+- "setdigout",     //{"command":2, "relay":1, "time":0} // 0XXX 0 0 0 0"
 - "getio",         //{"command":15}
-- "SET_ALL",       //{"command":48,"param":"X1,Y1 X2,Y2 X3,Y3 X4,Y4 X5,Y5 X6,Y6 X7,Y7 X8,Y8"}
-- "GET_STAT",      //{"command":35}
-- "setdigout",     // 1XXX 0 0 0 0",//{"command":1, "relay":1, "time":0}
-- "setdigout",     // 0XXX 0 0 0 0",//{"command":2, "relay":1, "time":0}
-- "#DO REPORT",    //{"command":40}
+- "getver",        //{"command":20}
+- "cpureset",      //{"command":26}
+- "deleterecords", //{"command":29}
 - "SET_ON",        //{"command":33, "relay":X, "time":Y}
 - "SET_OFF"        //{"command":34, "relay":X}
+- "GET_STAT",      //{"command":35}
+- "#DO REPORT",    //{"command":40}
+- "SET_ALL",       //{"command":48,"param":"X1,Y1 X2,Y2 X3,Y3 X4,Y4 X5,Y5 X6,Y6 X7,Y7 X8,Y8"}
 ```
 
 

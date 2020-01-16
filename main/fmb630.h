@@ -19,7 +19,7 @@
 #define TMR_EVT_DEF _1s * 30
 
 #define max_pk 3
-#define max_cmds 11
+#define max_cmds 12//11
 #define max_acks max_cmds
 #define max_relay 8
 #define max_pin 4
@@ -59,6 +59,22 @@ typedef enum {
     SOUTH_WEST,
     STOP
 } rumb_t;
+
+typedef enum {
+    CMD_GETGPS = 0,// "getgps", //{"command":0}
+    CMD_DELREC,    // "deleterecords", //{"command":29}
+    CMD_GETVER,    // "getver", //{"command":20}
+    CMD_GETIO,     // "getio", //{"command":15}
+    CMD_SET_ALL,   // "SET_ALL", //{"command":48,"param":"X1,Y1 X2,Y2 X3,Y3 X4,Y4 X5,Y5 X6,Y6 X7,Y7 X8,Y8"}
+    CMD_GET_STAT,  // "GET_STAT", //{"command":35}
+    CMD_SETDIGOUT1,// "setdigout", // 1XXX 0 0 0 0",//{"command":1, "relay":1, "time":0}
+    CMD_SETDIGOUT0,// "setdigout", // 0XXX 0 0 0 0",//{"command":2, "relay":1, "time":0}
+    CMD_DO_REPORT, // "#DO REPORT", //{"command":40}
+    CMD_SET_ON,    // "SET_ON", //{"command":33, "relay":X, "time":Y}
+    CMD_SET_OFF,   // "SET_OFF", //{"command":34, "relay":X}
+    CMD_CPURESET   // "cpureset" //{"command":26}
+} cmds_t;
+
 
 #pragma pack(push,1)
 typedef struct

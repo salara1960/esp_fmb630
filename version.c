@@ -29,4 +29,5 @@
 //const char *Version = "3.3 (13.01.2020)";//Minor changes : add leds for next events - log_server start, connect to cars_server
 //const char *Version = "3.4 (14.01.2020)";//Minor changes : add partition /disk with fatfs on dataflash
 //const char *Version = "3.4.1 (14.01.2020)";//Minor changes : copy /sdcard/conf.txt to /spiflash/conf.txt (add read/write functions)
-const char *Version = "3.4.2 (14.01.2020)";//Minor changes : add delete all files GPIO_DELIT_PIN for /spiflash
+//const char *Version = "3.4.2 (14.01.2020)";//Minor changes : add delete all files GPIO_DELIT_PIN for /spiflash
+const char *Version = "3.5 (16.01.2020)";//Minor changes : add new command (restart device)

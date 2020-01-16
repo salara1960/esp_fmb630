@@ -146,7 +146,8 @@ static const char *cmds[] = {
     "setdigout",     // 0XXX 0 0 0 0",//{"command":2, "relay":1, "time":0}
     "#DO REPORT",    //{"command":40}
     "SET_ON",        //{"command":33, "relay":X, "time":Y}
-    "SET_OFF"        //{"command":34, "relay":X}
+    "SET_OFF",       //{"command":34, "relay":X}
+    "cpureset"       //{"command":26}
 };
 
 static const char *acks[] = {
@@ -160,7 +161,8 @@ static const char *acks[] = {
     "DOUTS are set to: 0XXX TMOs are: 0 0 0 0",//7 = cmd2 - disable gasoline pump
     "#OK",//8 = cmd40 - "#DO REPORT"
     "Error command SET_ON",//9 = cmd33 - SET_ON X Y
-    "Error command SET_OFF"//10 = cmd34 - SET_OFF X
+    "Error command SET_OFF",//10 = cmd34 - SET_OFF X
+    "restart now"
 };
 
 static const char *cname[] = {
@@ -846,6 +848,7 @@ uint32_t ts4;
 s_box bx[max_relay];
 s_box pn[max_pin];
 s_mir mirs;
+uint8_t eoj = 0;
 
 
     if (xSemaphoreTake(mirror_mutex, portMAX_DELAY) == pdTRUE) {
@@ -868,7 +871,7 @@ s_mir mirs;
               else sprintf(ack_body, "%s", acks[ind]);
 
     switch (ind) {
-        case 0://getgps
+        case CMD_GETGPS://0://getgps
         {
             //GPS:1 Sat:5 Lat:54.694922 Long:20.516853 Alt:-353 Speed:0 Dir:104 Date: 2018/7/24 Time: 6:44:47
             int i_hour, i_min, i_sec, i_year, i_day, i_mes;
@@ -888,20 +891,20 @@ s_mir mirs;
                         i_year, i_mes, i_day, i_hour, i_min, i_sec);
         }
         break;
-        case 2://getver
+        case CMD_GETVER://2://getver
             uk = strstr(ack_body, "IMEI:");
             if (uk) {
                 uk += 5;
                 memcpy(ack_body, im, size_imei);
             }
         break;
-        case 3://getio
+        case CMD_GETIO://3://getio
             sprintf(ack_body,"DI1:%u DI2:%u DI3:%u DI4:%u AIN1:%u AIN2:%u AIN3:%u DO1:%u DO2:%u DO3:%u DO4:%u",
                         mirs.io1.val_din1, mirs.io1.val_din2, mirs.io1.val_din3, mirs.io1.val_din3,
                         ntohs(mirs.io2.val_ain1), ntohs(mirs.io2.val_ain2), ntohs(mirs.io2.val_ain3),
                         mirs.io1.val_dout1, mirs.io1.val_dout2, mirs.io1.val_dout3, mirs.io1.val_dout4);
         break;
-        case 4://SET_ALL
+        case CMD_SET_ALL://4://SET_ALL
             erc = 0;
             cid = 13;
             memset(ack_body, 0, sizeof(ack_body));
@@ -953,7 +956,7 @@ s_mir mirs;
                 sprintf(ack_body, "%s : OK\r\n", com);
             }
         break;
-        case 5://GET_STAT
+        case CMD_GET_STAT://5://GET_STAT
             erc = 1;
             cid = 13;
             memset(param, 0, sizeof(param));
@@ -977,8 +980,8 @@ s_mir mirs;
             }
             if (erc) sprintf(ack_body, "%s : ERROR\r\n", com);
         break;
-        case 6://"setdigout 1XXX 0 0 0 0",//{"command":1, "relay":1, "time":0}
-        case 7://"setdigout 0XXX 0 0 0 0",//{"command":2, "relay":1, "time":0}
+        case CMD_SETDIGOUT1://6://"setdigout 1XXX 0 0 0 0",//{"command":1, "relay":1, "time":0}
+        case CMD_SETDIGOUT0://7://"setdigout 0XXX 0 0 0 0",//{"command":2, "relay":1, "time":0}
             erc = 0;
             memset(param, 0, sizeof(param));
             strncpy(param, com, sizeof(param) - 1);
@@ -1032,11 +1035,11 @@ s_mir mirs;
                 memcpy((uint8_t *)&pin[0].stat, (uint8_t *)&pn[0].stat, sizeof(s_box) * max_pin);
             }
         break;
-        case 8://#DO REPORT
+        case CMD_DO_REPORT://8://#DO REPORT
             Prio = 1;
         break;
-        case 9://"Error command SET_ON",//9 = cmd33 - SET_ON X Y
-        case 10://"Error command SET_OFF",//10 = cmd34 - SET_OFF X
+        case CMD_SET_ON://9://"Error command SET_ON",//9 = cmd33 - SET_ON X Y
+        case CMD_SET_OFF://10://"Error command SET_OFF",//10 = cmd34 - SET_OFF X
             erc = 1;
             cid = 13;
             memset(param, 0, sizeof(param));
@@ -1081,6 +1084,9 @@ s_mir mirs;
                 print_msg(1, TAGGPS, "cmd=%d (%s) : rel=%d bit=%d tim=%u\n", ind, cmds[ind], k, bit, tim);
             }
         break;
+        case CMD_CPURESET:// "cpureset" //{"command":26}
+            eoj = 1;
+        break;;
     }
 
     if (xSemaphoreTake(mirror_mutex, portMAX_DELAY) == pdTRUE) {
@@ -1132,6 +1138,9 @@ s_mir mirs;
 
     *ci = ind;//return command index to upper level
 
+    // !!!
+    if (eoj) restart_flag = 1;
+    // !!!
     return ret;
 }
 //*************************************************************************************************
@@ -1340,7 +1349,7 @@ uint32_t stop_ses  = start_ses;
                                 sprintf(tmp,"Send packet #%u with len=%d to server:\n", cnt_send, lens);
                                 for (i = 0; i < lens; i++) sprintf(tmp+strlen(tmp),"%02X",(uint8_t)to_server[i]);
                                 print_msg(1, TAGGPS, "%s\n", tmp);
-                                if (resa != lens) { Vixod = 1; err |= 20;/* write error */ break; }
+                                if (resa != lens) { Vixod = 1; err |= 0x20;/* write error */ break; }
                                 else {//goto recv. ack from server
                                     wait_ack = 1; lenr = lenr_tmp = 0; ind = 0; lenr_wait = 4;
                                     tmr_ack = get_tmr(wait_ack_sec);//start wait ack timer
@@ -1394,13 +1403,18 @@ uint32_t stop_ses  = start_ses;
                                                 // ----------------------------------------
                                                 icmd = parse_cmd(ctype, scmd, to_server, &com_id);
                                                 if (icmd > 0) {
-                                                    resa = send(connsocket, to_server, icmd, MSG_DONTWAIT);//send to server ack for command
-                                                    sprintf(tmp,"Send ack for cmd(%d)='%s' :\n", com_id, scmd);
-                                                    for (i = 0; i < icmd; i++) sprintf(tmp+strlen(tmp),"%02X",(uint8_t)to_server[i]);
-                                                    print_msg(1, TAGGPS, "%s\n", tmp);
-                                                    if (resa != icmd) { Vixod = 1; err |= 20; break; }// write error
-                                                    else
-                                                    if (com_id == 8) tmr_send = get_tmr(2 * _1s);//high prio packet send
+                                                    if (!restart_flag) {
+                                                        resa = send(connsocket, to_server, icmd, MSG_DONTWAIT);//send to server ack for command
+                                                        sprintf(tmp,"Send ack for cmd(%d)='%s' :\n", com_id, scmd);
+                                                        for (i = 0; i < icmd; i++) sprintf(tmp+strlen(tmp),"%02X",(uint8_t)to_server[i]);
+                                                        print_msg(1, TAGGPS, "%s\n", tmp);
+                                                        if (resa != icmd) { Vixod = 1; err |= 0x20; break; }// write error
+                                                        else
+                                                        if (com_id == 8) tmr_send = get_tmr(2 * _1s);//high prio packet send
+                                                    } else {
+                                                        Vixod = 1;
+                                                        err |= 0x40;
+                                                    }
                                                 }
                                             }
                                         break;
@@ -1483,6 +1497,7 @@ uint32_t stop_ses  = start_ses;
             if (err&8) sprintf(chap+strlen(chap),"\tTimeout recv. data from server.\n");
             if (err&0x10) sprintf(chap+strlen(chap),"\tInternal error.\n");
             if (err&0x20) sprintf(chap+strlen(chap),"\tSend packet to server error.\n");
+            if (err&0x40) sprintf(chap+strlen(chap),"\tCPU reset now !\n");
             print_msg(1, TAGGPS, chap);
         }
 
