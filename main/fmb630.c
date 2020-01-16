@@ -113,8 +113,6 @@ uint32_t TMR_EVENT = TMR_EVT_DEF;
 
 uint8_t Prio = 0;
 
-
-//const char *cfg_file_def = ".virt.conf";
 uint8_t work_mode = 0;
 
 int scena_kols = 0, scena_delta = 0, scena_index = 1, scena_total = 0;

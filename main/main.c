@@ -689,6 +689,8 @@ void app_main()
 //******************************************************************************************************
 
 #ifdef SET_SSD1306
+    lcd_mutex = xSemaphoreCreateMutex();
+
     i2c_ssd1306_init();
 
     ssd1306_on(false);

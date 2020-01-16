@@ -254,82 +254,10 @@ extern const char *TAGGPS;
 //**********************************************************************************************************************
 //**********************************************************************************************************************
 
-/*
-extern const char *scena[];
-extern s_hdr_rec hdr_rec;
-
-extern int QuitAll;
-
-extern char time_str[TIME_STR_LEN];
-
-extern const char *im_def;
-extern char im[size_imei + 1];
-extern s_imei avl_imei;
-
-extern s_mir mirror;
-
-extern s_box box[max_relay];
-extern uint32_t tmr_box[max_relay];
-
-extern s_box pin[max_pin];
-extern uint32_t tmr_pin[max_pin];
-
-extern uint32_t tmr_send;
-extern uint32_t tmr_ack;
-extern uint32_t tmr_two;
-extern uint32_t tmr_evt;
-extern uint32_t TMR_EVENT;
-
-extern uint8_t Prio;
-
-extern int fd_log;
-extern int max_size_log;
-extern const char *fm_log_tail;
-extern char fm_log[max_log_name];
-extern const char *cfg_file_def;
-
-extern uint8_t work_mode;
-
-extern int scena_kols;
-extern int scena_delta;
-extern int scena_index;
-extern int scena_total;
-
-extern uint32_t wait_ack_sec;
-
-extern uint32_t sp_park;
-extern uint32_t sp_move;
-extern uint32_t send_period;
-extern uint32_t wait_before_new_connect;
-
-extern uint32_t last_send;
-
-extern uint8_t move_flag;
-extern uint8_t stop_flag;
-
-extern s_conf conf;
-*/
-
-//--------------------------------------------------------------------------------------------------
 
 extern int read_cfg(s_conf *cf, const char *fn, uint8_t prn);
 extern void fmb630_task(void *arg);
 
-/*
-extern void init_mirror(uint32_t *lat, uint32_t *lon);
-extern int make_record(uint8_t *buf, uint8_t kolpack, uint8_t wmode);
-extern int parse_cmd(uint8_t ct,  // command_type
-                    char *com,          // command string
-                    uint8_t *out, //output buffer
-                    int *ci);           // index of command
-extern int read_cfg(const char *fn, uint8_t prn);
-
-extern int add_ones(s_ones *data, uint8_t flag);
-extern s_rec *get_ones(int ind, s_ones *data, uint8_t flag);
-extern int find_ind(rumb_t rumb, uint8_t flag);
-extern void del_all_ones(uint8_t flag);
-extern void prn_all_ones(uint8_t flag);
-*/
 
 #endif
 
