@@ -31,4 +31,7 @@
 //const char *Version = "3.4.1 (14.01.2020)";//Minor changes : copy /sdcard/conf.txt to /spiflash/conf.txt (add read/write functions)
 //const char *Version = "3.4.2 (14.01.2020)";//Minor changes : add delete all files GPIO_DELIT_PIN for /spiflash
 //const char *Version = "3.5 (16.01.2020)";//Minor changes : add new command (restart device)
-const char *Version = "3.6 (16.01.2020)";//Minor changes : add mutex for ssd1306
+//const char *Version = "3.6 (16.01.2020)";//Minor changes : add mutex for ssd1306
+//const char *Version = "3.7 (16.01.2020)";//Major changes : add ftp client (first step)
+const char *Version = "3.8 (17.01.2020)";//Major changes : save configuration file from ftp_server to /spiflash/conf.txt
+

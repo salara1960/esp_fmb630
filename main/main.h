@@ -210,6 +210,10 @@ typedef struct {
     uint32_t port;
 } broker_t;
 
+
+extern esp_err_t mntOK;
+extern esp_err_t diskOK;
+
 extern const char server_cert[];
 extern const char server_key[];
 
@@ -269,6 +273,9 @@ extern void print_msg(uint8_t with, const char *tag, const char *fmt, ...);
     extern xSemaphoreHandle mirror_mutex;
 #endif
 
+#ifdef SET_FTP_CLI
+    #include "ftp_cli.h"
+#endif
 
 
 #endif

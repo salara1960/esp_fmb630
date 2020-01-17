@@ -1,5 +1,6 @@
 #undef UDP_SEND_BCAST
 
+#define SET_FTP_CLI
 //#define SET_TLS_SRV
 #define SET_FATDISK
 #define SET_FMB630

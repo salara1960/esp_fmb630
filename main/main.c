@@ -19,7 +19,7 @@ static const char *TAGFAT = "CARD";
 #endif
 static const char *sdPath = "/sdcard";
 static const char *sdConf = "conf.txt";
-static esp_err_t mntOK = ESP_FAIL;
+esp_err_t mntOK = ESP_FAIL;
 
 #ifdef SET_FATDISK
 static const char *TAGFATD = "DISK";
@@ -27,7 +27,7 @@ static const char *diskPath = "/spiflash";
 static const char *diskPart = "disk";
 static wl_handle_t s_wl_handle = -1;//WL_INVALID_HANDLE;
 static size_t fatfs_size = 0;
-static esp_err_t diskOK = ESP_FAIL;
+esp_err_t diskOK = ESP_FAIL;
 #endif
 
 #if defined(SET_SDCARD) || defined(SET_FATDISK)
@@ -826,18 +826,18 @@ void app_main()
         sprintf(line, "%s/%s", diskPath, sdConf);
         cfgErr = read_cfg(&gps_ini, line, 0);
 
-        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
-        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
-        diskOK = ESP_FAIL;
+//        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
+//        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
+//        diskOK = ESP_FAIL;
     }
     if (cfgErr) {
         if (mntOK == ESP_OK) {
             sprintf(line, "%s/%s", sdPath, sdConf);
             cfgErr = read_cfg(&gps_ini, line, 0);
 
-            esp_vfs_fat_sdmmc_unmount();
-            print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
-            mntOK = ESP_FAIL;
+//            esp_vfs_fat_sdmmc_unmount();
+//            print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
+//            mntOK = ESP_FAIL;
         }
     }
     if (cfgErr) {
@@ -862,9 +862,18 @@ void app_main()
             ESP_LOGE(TAGGPS, "Create fmb630_task failed | FreeMem %u", xPortGetFreeHeapSize());
         #endif
     }
-    //vTaskDelay(1000 / portTICK_RATE_MS);
+    vTaskDelay(1000 / portTICK_RATE_MS);
 #endif
 
+/*
+#ifdef SET_FATDISK
+    if (diskOK == ESP_OK) {
+        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
+        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
+        diskOK = ESP_FAIL;
+    }
+#endif
+*/
 #ifdef SET_SDCARD
     if (mntOK == ESP_OK) {
         esp_vfs_fat_sdmmc_unmount();
@@ -872,12 +881,25 @@ void app_main()
         mntOK = ESP_FAIL;
     }
 #endif
-#ifdef SET_FATDISK
-    if (diskOK == ESP_OK) {
-        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
-        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
-        diskOK = ESP_FAIL;
+
+
+#ifdef SET_FTP_CLI
+    s_ftp_var farg;
+    memset((uint8_t *)&farg, 0, sizeof(s_ftp_var));
+    farg.devMnt = diskOK;
+    farg.devPort = FTP_SRV_PORT_DEF;
+    strcpy(farg.devSrv, FTP_SRV_ADDR_DEF);
+    strcpy(farg.devLogin, FTP_SRV_LOGIN_DEF);
+    strcpy(farg.devPasswd, FTP_SRV_PASSWD_DEF);
+    strcpy(farg.devPath, FTP_PATH_DEF);
+    strcpy(farg.devConf, FTP_CONF_DEF);
+    if (xTaskCreatePinnedToCore(&ftp_cli_task, "ftp_cli_task", 8*STACK_SIZE_1K, &farg, 8, NULL, 1) != pdPASS) {
+        #ifdef SET_ERROR_PRINT
+            ESP_LOGE(TAGGPS, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
+        #endif
     }
+    //vTaskDelay(1000 / portTICK_RATE_MS);
+
 #endif
 
 
@@ -891,6 +913,7 @@ void app_main()
     static uint8_t screen = 0;
 #endif
 
+    uint8_t mdone = 0;
 
     while (!restart_flag) {//main loop
 
@@ -956,8 +979,19 @@ void app_main()
 #endif
         }
 
+        if (!mdone) {
+            if (!ftp_start) {
+#ifdef SET_FATDISK
+                if (diskOK == ESP_OK) {
+                esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
+                print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
+                diskOK = ESP_FAIL;
+            }
+#endif
+            }
+        }
 
-    }
+    }//while (!restart_flag)
 
     vTaskDelay(1000 / portTICK_RATE_MS);
 
