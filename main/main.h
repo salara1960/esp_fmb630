@@ -120,7 +120,7 @@
 
 #define sntp_srv_len   32
 #define wifi_param_len 32
-
+#define ftp_pole_len 16
 
 
 #pragma once
@@ -156,26 +156,32 @@
 #define STACK_SIZE_3K    3072
 #define STACK_SIZE_4K    4096
 
-#define STORAGE_NAMESPACE	"nvs"
-#define PARAM_CLIID_NAME	"cliid"
-#define PARAM_SNTP_NAME		"sntp"
-#define PARAM_TZONE_NAME	"tzone"
-#define PARAM_SSID_NAME		"ssid"
-#define PARAM_KEY_NAME		"key"
-#define PARAM_WMODE_NAME	"wmode"
-#define PARAM_TLS_PORT		"tport"
-#define PARAM_MSMODE_NAME	"msm"
+#define STORAGE_NAMESPACE "nvs"
+#define PARAM_CLIID_NAME  "cliid"
+#define PARAM_SNTP_NAME   "sntp"
+#define PARAM_TZONE_NAME  "tzone"
+#define PARAM_SSID_NAME   "ssid"
+#define PARAM_KEY_NAME    "key"
+#define PARAM_WMODE_NAME  "wmode"
+#define PARAM_TLS_PORT    "tport"
+#define PARAM_MSMODE_NAME "msm"
 
+#ifdef SET_FTP_CLI
+    #define PARAM_FTP_SRV_ADDR_NAME   "ftpip"
+    #define PARAM_FTP_SRV_PORT_NAME   "ftpprt"
+    #define PARAM_FTP_SRV_LOGIN_NAME  "test"
+    #define PARAM_FTP_SRV_PASSWD_NAME "9999"
+#endif
 
-#define EXAMPLE_WIFI_SSID 	CONFIG_WIFI_SSID
-#define EXAMPLE_WIFI_PASS 	CONFIG_WIFI_PASSWORD
-#define max_inbuf 		1024
+#define EXAMPLE_WIFI_SSID CONFIG_WIFI_SSID
+#define EXAMPLE_WIFI_PASS CONFIG_WIFI_PASSWORD
+#define max_inbuf         1024
 
 #define EXAMPLE_ESP_MAXIMUM_RETRY  3
 
 
-#define sntp_server_def		"pool.ntp.org"//"2.ru.pool.ntp.org"
-#define sntp_tzone_def		"EET-2"
+#define sntp_server_def "pool.ntp.org"//"2.ru.pool.ntp.org"
+#define sntp_tzone_def  "EET-2"
 
 
 #define _100ms   1
@@ -213,6 +219,7 @@ typedef struct {
 
 extern esp_err_t mntOK;
 extern esp_err_t diskOK;
+
 
 extern const char server_cert[];
 extern const char server_key[];

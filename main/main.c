@@ -58,6 +58,12 @@ esp_err_t fs_ok = ESP_FAIL;;
 
 uint32_t tls_client_ip = 0;
 
+#ifdef SET_FTP_CLI
+    static char ftp_srv_addr[ftp_pole_len] = {0};
+    static uint16_t ftp_srv_port;
+    static char ftp_srv_login[ftp_pole_len] = {0};
+    static char ftp_srv_passwd[ftp_pole_len] = {0};
+#endif
 
 #ifdef UDP_SEND_BCAST
     static const char *TAGU = "UDP";
@@ -630,12 +636,11 @@ void app_main()
             save_param(PARAM_WMODE_NAME, (void *)&wmode, sizeof(uint8_t));
         }
     }
-/* Set STA mode !!!
+// Set STA mode !!!
     wmode = WIFI_MODE_STA;
     save_param(PARAM_WMODE_NAME, (void *)&wmode, sizeof(uint8_t));
-*/
+/**/
     ets_printf("[%s] WIFI_MODE (%d): %s\n", TAGT, wmode, wmode_name[wmode]);
-
 
 #ifdef UDP_SEND_BCAST
     if (wmode == WIFI_MODE_STA) udp_flag = 1;
@@ -661,7 +666,6 @@ void app_main()
 
     wifi_param_ready = 1;
 
-
 #ifdef SET_TLS_SRV
     err = read_param(PARAM_TLS_PORT, (void *)&tls_port, sizeof(uint16_t));
     if ((err != ESP_OK) || (!rt)) {
@@ -671,6 +675,44 @@ void app_main()
     ets_printf("[%s] TLS_PORT: %u\n", TAGT, tls_port);
 #endif
 
+
+#ifdef SET_FTP_CLI
+    //   ftp_srv_addr
+    memset(ftp_srv_addr, 0, sizeof(ftp_srv_addr));
+    err = read_param(PARAM_FTP_SRV_ADDR_NAME, (void *)ftp_srv_addr, sizeof(ftp_srv_addr));
+    if (err != ESP_OK) {
+        memset(ftp_srv_addr, 0, sizeof(ftp_srv_addr));
+        strncpy(ftp_srv_addr, FTP_SRV_ADDR_DEF, ftp_pole_len);
+        save_param(PARAM_FTP_SRV_ADDR_NAME, (void *)ftp_srv_addr, sizeof(ftp_srv_addr));
+    }
+    //   ftp_srv_port
+    ftp_srv_port = FTP_SRV_PORT_DEF;
+    err = read_param(PARAM_FTP_SRV_PORT_NAME, (void *)&ftp_srv_port, sizeof(uint16_t));
+    if (err != ESP_OK) {
+        ftp_srv_port = FTP_SRV_PORT_DEF;
+        save_param(PARAM_FTP_SRV_PORT_NAME, (void *)&ftp_srv_port, sizeof(uint16_t));
+    }
+    //   ftp_srv_login
+    memset(ftp_srv_login, 0, sizeof(ftp_srv_login));
+    err = read_param(PARAM_FTP_SRV_LOGIN_NAME, (void *)ftp_srv_login, sizeof(ftp_srv_login));
+    if (err != ESP_OK) {
+        memset(ftp_srv_login, 0, sizeof(ftp_srv_login));
+        strncpy(ftp_srv_login, FTP_SRV_LOGIN_DEF, ftp_pole_len);
+        save_param(PARAM_FTP_SRV_LOGIN_NAME, (void *)ftp_srv_login, sizeof(ftp_srv_login));
+    }
+    //   ftp_srv_passwd
+    memset(ftp_srv_passwd, 0, sizeof(ftp_srv_passwd));
+    err = read_param(PARAM_FTP_SRV_PASSWD_NAME, (void *)ftp_srv_passwd, sizeof(ftp_srv_passwd));
+    if (err != ESP_OK) {
+        memset(ftp_srv_passwd, 0, sizeof(ftp_srv_passwd));
+        strncpy(ftp_srv_passwd, FTP_SRV_PASSWD_DEF, ftp_pole_len);
+        save_param(PARAM_FTP_SRV_PASSWD_NAME, (void *)ftp_srv_passwd, sizeof(ftp_srv_passwd));
+    }
+    ets_printf("[%s] FTP SERVER : '%s:%u' (%s/%s)\n",
+               TAGT,
+               ftp_srv_addr, ftp_srv_port,
+               ftp_srv_login, ftp_srv_passwd);
+#endif
 
 //******************************************************************************************************
 //ADC_ATTEN_0db   = 0,  /*!<The input voltage of ADC will be reduced to about 1/1 */
@@ -887,10 +929,10 @@ void app_main()
     s_ftp_var farg;
     memset((uint8_t *)&farg, 0, sizeof(s_ftp_var));
     farg.devMnt = diskOK;
-    farg.devPort = FTP_SRV_PORT_DEF;
-    strcpy(farg.devSrv, FTP_SRV_ADDR_DEF);
-    strcpy(farg.devLogin, FTP_SRV_LOGIN_DEF);
-    strcpy(farg.devPasswd, FTP_SRV_PASSWD_DEF);
+    farg.devPort = ftp_srv_port;//FTP_SRV_PORT_DEF;
+    strcpy(farg.devSrv, ftp_srv_addr);//FTP_SRV_ADDR_DEF);
+    strcpy(farg.devLogin, ftp_srv_login);//FTP_SRV_LOGIN_DEF);
+    strcpy(farg.devPasswd, ftp_srv_passwd);//FTP_SRV_PASSWD_DEF);
     strcpy(farg.devPath, FTP_PATH_DEF);
     strcpy(farg.devConf, FTP_CONF_DEF);
     if (xTaskCreatePinnedToCore(&ftp_cli_task, "ftp_cli_task", 8*STACK_SIZE_1K, &farg, 8, NULL, 1) != pdPASS) {

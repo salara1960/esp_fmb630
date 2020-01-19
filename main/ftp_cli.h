@@ -14,7 +14,7 @@
 #define FTP_CONF_DEF "conf.txt"
 
 
-#define FTP_CLIENT_DEBUG
+//#define FTP_CLIENT_DEBUG
 
 #define FTP_CLIENT_BUFFER_SIZE          2048 //4096
 #define FTP_CLIENT_RESPONSE_BUFFER_SIZE 1024
@@ -52,7 +52,6 @@
 #define FTP_CLIENT_CONTROL 0
 #define FTP_CLIENT_READ    1
 #define FTP_CLIENT_WRITE   2
-
 
 typedef struct NetBuf NetBuf_t;
 
@@ -104,13 +103,13 @@ typedef struct
 
 
 typedef struct {
-    char devSrv[16];
+    char devSrv[ftp_pole_len];
     esp_err_t devMnt;
     uint16_t devPort;
-    char devPath[16];
-    char devConf[16];
-    char devLogin[16];
-    char devPasswd[16];
+    char devPath[ftp_pole_len];
+    char devConf[ftp_pole_len];
+    char devLogin[ftp_pole_len];
+    char devPasswd[ftp_pole_len];
 } s_ftp_var;
 
 
