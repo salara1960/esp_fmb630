@@ -45,6 +45,8 @@ static char work_pass[wifi_param_len] = {0};
 #endif
 EventGroupHandle_t wifi_event_group;
 const int CONNECTED_BIT = BIT0;
+xSemaphoreHandle prn_mutex;
+
 
 uint8_t *macs = NULL;
 
@@ -138,27 +140,27 @@ size_t len = BUF_SIZE;//1024
 
     char *st = (char *)calloc(1, len);
     if (st) {
-        int dl = 0, sz;
-        va_list args;
-        if (with) {
-            struct tm *ctimka;
-            time_t it_ct = time(NULL);
-            ctimka = localtime(&it_ct);
-            dl = sprintf(st, "%02d.%02d %02d:%02d:%02d ",
-                             ctimka->tm_mday,ctimka->tm_mon + 1,ctimka->tm_hour,ctimka->tm_min,ctimka->tm_sec);
-        }
-        if (tag) dl += sprintf(st+strlen(st), "[%s] ", tag);
-        sz = dl;
-        va_start(args, fmt);
-        sz += vsnprintf(st + dl, len - dl, fmt, args);
-
-        printf(st);
-
+        if (xSemaphoreTake(prn_mutex, portMAX_DELAY) == pdTRUE) {
+            int dl = 0, sz;
+            va_list args;
+            if (with) {
+                struct tm *ctimka;
+                time_t it_ct = time(NULL);
+                ctimka = localtime(&it_ct);
+                dl = sprintf(st, "%02d.%02d %02d:%02d:%02d ",
+                                 ctimka->tm_mday,ctimka->tm_mon + 1,ctimka->tm_hour,ctimka->tm_min,ctimka->tm_sec);
+            }
+            if (tag) dl += sprintf(st+strlen(st), "[%s] ", tag);
+            sz = dl;
+            va_start(args, fmt);
+            sz += vsnprintf(st + dl, len - dl, fmt, args);
+            printf(st);
 #ifdef SET_NET_LOG
-        if (tcpCli >= 0) putMsg(st);
+            if (tcpCli >= 0) putMsg(st);
 #endif
-
-        va_end(args);
+            va_end(args);
+            xSemaphoreGive(prn_mutex);
+        }
         free(st);
     }
 }
@@ -196,7 +198,9 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
             case WIFI_EVENT_STA_DISCONNECTED :
                 if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
                     esp_wifi_connect();
+
                     xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
+
                     s_retry_num++;
                     ets_printf("[%s] retry to connect to the AP\n", TAGW);
                 } else ets_printf("[%s] connect to the AP fail\n", TAGW);
@@ -224,6 +228,7 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
                 bca.u_addr.ip4.addr = ip4.addr | 0xff000000;
                 ets_printf("[%s] Local ip_addr : %s\n", TAGW, localip);
                 s_retry_num = 0;
+
                 xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
             }
             break;
@@ -523,8 +528,6 @@ void app_main()
 
     vTaskDelay(1500 / portTICK_RATE_MS);
 
-    //ets_printf("\nApp version %s | SDK Version %s | FreeMem %u\n", Version, esp_get_idf_version(), xPortGetFreeHeapSize());
-
     esp_err_t err = nvs_flash_init();
     if (err != ESP_OK) {
         ESP_LOGE(TAGN, "1: nvs_flash_init() ERROR (0x%x) !!!", err);
@@ -554,15 +557,16 @@ void app_main()
 
     //--------------------------------------------------------
 
-    gpio_pad_select_gpio(GPIO_LOG_PIN);
+    gpio_pad_select_gpio(GPIO_LOG_PIN);//white LED
     gpio_pad_pullup(GPIO_LOG_PIN);
     gpio_set_direction(GPIO_LOG_PIN, GPIO_MODE_OUTPUT);
     gpio_set_level(GPIO_LOG_PIN, LED_OFF);
     //
-    gpio_pad_select_gpio(GPIO_GPS_PIN);
+    gpio_pad_select_gpio(GPIO_GPS_PIN);//green LED
     gpio_pad_pullup(GPIO_GPS_PIN);
     gpio_set_direction(GPIO_GPS_PIN, GPIO_MODE_OUTPUT);
     gpio_set_level(GPIO_GPS_PIN, LED_OFF);
+    //
 
     //--------------------------------------------------------
 
@@ -582,11 +586,7 @@ void app_main()
     ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 100000));//100000 us = 100 ms
     ets_printf("[%s] Started timer with period 100 ms, time since boot: %lld/%llu\n",
                TAGT, esp_timer_get_time(), get_varta() * 100);
-    //--------------------------------------------------------
 
-
-    //--------------------------------------------------------
-    //    log_mutex = xSemaphoreCreateMutex();
     //--------------------------------------------------------
 
     //CLI_ID
@@ -637,8 +637,8 @@ void app_main()
         }
     }
 // Set STA mode !!!
-    wmode = WIFI_MODE_STA;
-    save_param(PARAM_WMODE_NAME, (void *)&wmode, sizeof(uint8_t));
+//    wmode = WIFI_MODE_STA;
+//    save_param(PARAM_WMODE_NAME, (void *)&wmode, sizeof(uint8_t));
 /**/
     ets_printf("[%s] WIFI_MODE (%d): %s\n", TAGT, wmode, wmode_name[wmode]);
 
@@ -722,11 +722,12 @@ void app_main()
     adc1_config_width(ADC_WIDTH_12Bit);
     adc1_config_channel_atten(ADC1_TEST_CHANNEL, ADC_ATTEN_11db);
 
+    prn_mutex = xSemaphoreCreateMutex();
 
 //******************************************************************************************************
 
     initialize_wifi(wmode);
-    vTaskDelay(2000 / portTICK_RATE_MS);
+    vTaskDelay(1000 / portTICK_RATE_MS);
 
 //******************************************************************************************************
 
@@ -755,12 +756,12 @@ void app_main()
 
 #ifdef SET_SNTP
     if (wmode & 1) {// WIFI_MODE_STA) || WIFI_MODE_APSTA
-        if (xTaskCreatePinnedToCore(&sntp_task, "sntp_task", STACK_SIZE_2K, work_sntp, 5, NULL, 0) != pdPASS) {//7,NULL,1
+        if (xTaskCreatePinnedToCore(&sntp_task, "sntp_task", STACK_SIZE_2K, work_sntp, 10, NULL, 0) != pdPASS) {//5,NULL,1
             #ifdef SET_ERROR_PRINT
                 ESP_LOGE(TAGS, "Create sntp_task failed | FreeMem %u", xPortGetFreeHeapSize());
             #endif
         }
-        //vTaskDelay(1000 / portTICK_RATE_MS);
+        vTaskDelay(1000 / portTICK_RATE_MS);
     }
 #endif
 
@@ -781,7 +782,7 @@ void app_main()
 
 #ifdef SET_SDCARD
 
-    vTaskDelay(2000 / portTICK_RATE_MS);
+    vTaskDelay(1000 / portTICK_RATE_MS);
 
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
 
@@ -820,6 +821,8 @@ void app_main()
 //*****************************************************************************************************
 #ifdef SET_FATDISK
 
+    vTaskDelay(1000 / portTICK_RATE_MS);
+
     const esp_vfs_fat_mount_config_t mount_disk = {
         .max_files = 5,
         .format_if_mount_failed = false
@@ -856,6 +859,9 @@ void app_main()
 //*****************************************************************************************************
 
 #ifdef SET_FMB630
+
+    vTaskDelay(1000 / portTICK_RATE_MS);
+
     rec_mutex    = xSemaphoreCreateMutex();
     mirror_mutex = xSemaphoreCreateMutex();
 
@@ -926,6 +932,7 @@ void app_main()
 
 
 #ifdef SET_FTP_CLI
+    uint8_t mdone = 0;
     s_ftp_var farg;
     memset((uint8_t *)&farg, 0, sizeof(s_ftp_var));
     farg.devMnt = diskOK;
@@ -940,7 +947,7 @@ void app_main()
             ESP_LOGE(TAGGPS, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
         #endif
     }
-    //vTaskDelay(1000 / portTICK_RATE_MS);
+    vTaskDelay(1000 / portTICK_RATE_MS);
 
 #endif
 
@@ -955,7 +962,9 @@ void app_main()
     static uint8_t screen = 0;
 #endif
 
-    uint8_t mdone = 0;
+
+    check_pin(GPIO_RESTART_PIN);
+
 
     while (!restart_flag) {//main loop
 
@@ -988,6 +997,7 @@ void app_main()
                     }
                 }
 #endif
+//                sprintf(stk+strlen(stk), "  GPIO_35=%u", check_pin(GPIO_RESTART_PIN));
                 ssd1306_text_xy(stk, 2, 1);
             }
             adc_tw = get_tmr(_1s);
@@ -1021,6 +1031,7 @@ void app_main()
 #endif
         }
 
+#ifdef SET_FTP_CLI
         if (!mdone) {
             if (!ftp_start) {
 #ifdef SET_FATDISK
@@ -1028,46 +1039,58 @@ void app_main()
                 esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
                 print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
                 diskOK = ESP_FAIL;
+                /*if (getFileOK > 0) {
+                    restart_flag = 1;
+                    break;
+                }*/
             }
 #endif
             }
         }
+#endif
+
+        if (!gpio_get_level(GPIO_RESTART_PIN)) {
+            print_msg(1, TAG, "!!! RESTART_PIN is PRESSED !!!\n");
+            restart_flag = 1;
+            break;
+        }
 
     }//while (!restart_flag)
 
-    vTaskDelay(1000 / portTICK_RATE_MS);
+//    vTaskDelay(1000 / portTICK_RATE_MS);
 
-    uint8_t cnt = 20;
-    ets_printf("[%s] Waiting for all task closed...%d sec.\n", TAG, cnt);
+    uint8_t cnt = 100;
+    print_msg(1, TAG, "Waiting for all task closed...%d sec.\n", cnt);
     while (total_task) {
         cnt--; if (!cnt) break;
-        vTaskDelay(1000 / portTICK_RATE_MS);
+        vTaskDelay(200 / portTICK_RATE_MS);
     }
-    ets_printf("[%s] (%02d) DONE. Total unclosed task %d\n", TAG, cnt, total_task);
+    print_msg(1, TAG, "(%d) DONE. Total unclosed task %d\n", cnt, total_task);
 
     // UMOUNT ALL
 #ifdef SET_FATDISK
     if (diskOK == ESP_OK) {
         esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
-        ets_printf("[%s] Unmounted FAT filesystem partition '%s' | FreeMem %u\n", TAGFATD, diskPart, xPortGetFreeHeapSize());
+        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
         diskOK = ESP_FAIL;
     }
 #endif
 #ifdef SET_SDCARD
     if (mntOK == ESP_OK) {
         esp_vfs_fat_sdmmc_unmount();
-        ets_printf("[%s] Unmounted FAT filesystem on '%s' | FreeMem %u\n", TAGFAT, sdPath, xPortGetFreeHeapSize());
+        print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
         mntOK = ESP_FAIL;
     }
 #endif
 
     if (macs) free(macs);
 
-    ets_printf("[%s] Waiting wifi stop...\n", TAG);
+    print_msg(1, TAG, "Waiting wifi stop...\n\n");
+
+    vTaskDelay(2000 / portTICK_RATE_MS);
 
     ESP_ERROR_CHECK(esp_wifi_stop());
     ESP_ERROR_CHECK(esp_wifi_deinit());
-
 
     esp_restart();
 

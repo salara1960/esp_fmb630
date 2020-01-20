@@ -7,7 +7,7 @@
 
 * Hardware part : esp32(DevKitC board) + ssd1306(i2c) + SDCard + 2LED
 
-* Software part : fmb630_client + ftp_client + sntp_server + udp_server + log_server + FreeRTOS
+* Software part : fmb630_client + ftp_client + sntp_client + udp_client + log_server + tls_server + FreeRTOS
 
 
 ## Файлы пакета:

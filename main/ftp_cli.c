@@ -19,7 +19,7 @@ int main(void)
 
 const char *TAGFTP = "FTP";
 uint8_t ftp_start = 0;
-
+int getFileOK = 0;
 
 struct NetBuf {
     char *cput;
@@ -1166,9 +1166,9 @@ total_task++;
 s_ftp_var fvar;
 int ret = 0;
 
-    xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
-
     memcpy((uint8_t *)&fvar, (uint8_t *)arg, sizeof(s_ftp_var));
+
+    xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
 
     print_msg(1, TAGFTP, "Start ftp_client task | FreeMem %u\n", xPortGetFreeHeapSize());
 
@@ -1186,6 +1186,8 @@ int ret = 0;
         ftpClient->ftpClientQuit(ftpBuf);
     }
     print_msg(1, TAGFTP, "Stop ftp_client task (ret=%d) | FreeMem %u\n", ret, xPortGetFreeHeapSize());
+
+    getFileOK = ret;
 
     if (total_task) total_task--;
     ftp_start = 0;

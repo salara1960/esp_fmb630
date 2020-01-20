@@ -94,7 +94,7 @@ float tChip = get_tChip();
 
     sprintf(str_tls_port,"%u", *(uint16_t *)arg);
 
-    ets_printf("[%s] TLS server task starting...(port=%s) | FreeMem=%u\n", TAGTLS, str_tls_port, xPortGetFreeHeapSize());
+    print_msg(1, TAGTLS, "TLS server task starting...(port=%s) | FreeMem=%u\n", str_tls_port, xPortGetFreeHeapSize());
 
     buf = (char *)calloc(1, BUF_SIZE);
     if (buf) tbuf = (char *)calloc(1, BUF_SIZE);
@@ -161,10 +161,7 @@ float tChip = get_tChip();
 
         mbedtls_net_init(&server_ctx);
         mbedtls_net_init(&client_ctx);
-        if (setDateTimeOK)
-            print_msg(1, TAGTLS, "Wait new connection...\n");
-        else
-            ets_printf("[%s] Wait new connection...\n", TAGTLS);
+        print_msg(1, TAGTLS, "Wait new connection...\n");
 
         // Bind
         ret = mbedtls_net_bind(&server_ctx, NULL, str_tls_port, MBEDTLS_NET_PROTO_TCP);
@@ -289,31 +286,32 @@ float tChip = get_tChip();
             }
 
             if (!restart_flag) {
-        	// Write
-        	memset(tbuf, 0, BUF_SIZE);
-        	if (auth) {
-            	    //
-            	    vcc = (float)get_vcc(); vcc /= 1000;
-            	    tChip = get_tChip();
-            	    //
-            	    vTaskDelay(100 / portTICK_RATE_MS);
-            	    len = sprintf(tbuf, "{\"DevID\":\"%08X\",\"Time\":%u,\"FreeMem\":%u,\"cli\":\"%s\",\"Vcc\":%.3f,\"Temp\":%.2f}\r\n",
+                // Write
+                memset(tbuf, 0, BUF_SIZE);
+                if (auth) {
+                    //
+                    vcc = (float)get_vcc(); vcc /= 1000;
+                    tChip = get_tChip();
+                    //
+                    vTaskDelay(100 / portTICK_RATE_MS);
+                    len = sprintf(tbuf, "{\"DevID\":\"%08X\",\"Time\":%u,\"FreeMem\":%u,\"cli\":\"%s\",\"Vcc\":%.3f,\"Temp\":%.2f}\r\n",
                                         cli_id, (uint32_t)time(NULL), xPortGetFreeHeapSize(), tls_cli_ip_addr, vcc, tChip);
-        	} else len = sprintf(tbuf, "{\"status\":\"You are NOT auth. client, bye\"}\r\n");
+                } else len = sprintf(tbuf, "{\"status\":\"You are NOT auth. client, bye\"}\r\n");
 
-        	if (len) {
-            	    while ((ret = mbedtls_ssl_write(&ssl, (unsigned char *)tbuf, len)) <= 0) {
-                	if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
-                    	    ESP_LOGE(TAGTLS," failed ! mbedtls_ssl_write returned %d", ret);
-                    	    err = ret;
-                    	    break;
-                	}
-            	    }
-            	    print_msg(1, TAGTLS, "%s", tbuf);
-        	}
-        	if (!auth || eot) break;
-        	vTaskDelay(10 / portTICK_RATE_MS);
-	    }
+                if (len) {
+                    while ((ret = mbedtls_ssl_write(&ssl, (unsigned char *)tbuf, len)) <= 0) {
+                        if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+                            ESP_LOGE(TAGTLS," failed ! mbedtls_ssl_write returned %d", ret);
+                            err = ret;
+                            break;
+                        }
+                    }
+                    print_msg(1, TAGTLS, "%s", tbuf);
+                }
+                if (!auth || eot) break;
+                vTaskDelay(10 / portTICK_RATE_MS);
+            }
+
         }//while (!tls_hangup...)
 
 
@@ -347,7 +345,7 @@ quit1:
     if (tbuf) free(tbuf);
     if (buf) free(buf);
 
-    ets_printf("[%s] TLS server task stop | FreeMem=%u\n", TAGTLS, xPortGetFreeHeapSize());
+    print_msg(1, TAGTLS, "TLS server task stop | FreeMem=%u\n", xPortGetFreeHeapSize());
     if (total_task) total_task--;
     tls_start = 0;
     vTaskDelete(NULL);

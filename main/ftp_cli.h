@@ -14,7 +14,7 @@
 #define FTP_CONF_DEF "conf.txt"
 
 
-//#define FTP_CLIENT_DEBUG
+#define FTP_CLIENT_DEBUG
 
 #define FTP_CLIENT_BUFFER_SIZE          2048 //4096
 #define FTP_CLIENT_RESPONSE_BUFFER_SIZE 1024
@@ -115,6 +115,7 @@ typedef struct {
 
 extern const char *TAGFTP;
 extern uint8_t ftp_start;
+extern int getFileOK;
 
 extern FtpClient *getFtpClient(void);
 extern void ftp_cli_task(void *arg);
