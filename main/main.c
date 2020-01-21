@@ -40,7 +40,7 @@ static unsigned char wifi_param_ready = 0;
 char work_ssid[wifi_param_len] = {0};
 static char work_pass[wifi_param_len] = {0};
 #ifdef SET_SNTP
-    static char work_sntp[sntp_srv_len] = {0};
+    char work_sntp[sntp_srv_len] = {0};
     char time_zone[sntp_srv_len] = {0};
 #endif
 EventGroupHandle_t wifi_event_group;
@@ -108,8 +108,8 @@ static bool scr_ini_done = false;
 esp_err_t read_param(char *param_name, void *param_data, size_t len);
 esp_err_t save_param(char *param_name, void *param_data, size_t len);
 
-int save_rec_log(char *, int);
-int read_rec_log(char *, uint32_t *);
+//int save_rec_log(char *, int);
+//int read_rec_log(char *, uint32_t *);
 
 //***************************************************************************************************************
 
@@ -155,10 +155,10 @@ size_t len = BUF_SIZE;//1024
             va_start(args, fmt);
             sz += vsnprintf(st + dl, len - dl, fmt, args);
             printf(st);
+            va_end(args);
 #ifdef SET_NET_LOG
             if (tcpCli >= 0) putMsg(st);
 #endif
-            va_end(args);
             xSemaphoreGive(prn_mutex);
         }
         free(st);
@@ -201,7 +201,7 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
 
                     xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
 
-                    s_retry_num++;
+//                    s_retry_num++;
                     ets_printf("[%s] retry to connect to the AP\n", TAGW);
                 } else ets_printf("[%s] connect to the AP fail\n", TAGW);
             break;
@@ -1045,6 +1045,20 @@ void app_main()
                 }*/
             }
 #endif
+            }
+        }
+        if (ftp_go_flag) {
+            if (!ftp_start) {
+                ftp_go_flag = 0;
+                if (diskOK != ESP_OK) diskOK = esp_vfs_fat_spiflash_mount(diskPath, diskPart, &mount_disk, &s_wl_handle);
+                if (diskOK == ESP_OK) {
+                    farg.devMnt = diskOK;
+                    if (xTaskCreatePinnedToCore(&ftp_cli_task, "ftp_cli_task", 8*STACK_SIZE_1K, &farg, 8, NULL, 1) != pdPASS) {
+                        #ifdef SET_ERROR_PRINT
+                            ESP_LOGE(TAGGPS, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
+                        #endif
+                    } else vTaskDelay(500 / portTICK_RATE_MS);
+                }
             }
         }
 #endif

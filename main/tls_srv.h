@@ -45,6 +45,20 @@
     } s_tls_client_ip;
     #pragma pack(pop)
 
+    typedef enum {
+        CTRL_AUTH = 0,//"auth"//0
+        CTRL_UDP,//"udp"//1
+        CTRL_SNTP,//"sntp"//2
+        CTRL_SNTP_SRV,//"sntp_srv"//3
+        CTRL_TIME_ZONE,//"time_zone"//4
+        CTRL_RESTART,//"restart"//5
+        CTRL_TIME,//"time"//6
+        CTRL_FTP_GO,//"ftp_go"//7
+        CTRL_FTP_SRV,//"ftp_srv"//8
+        CTRL_FTP_USER,//"ftp_user"//9
+        CTRL_GET//"get"//10
+    } e_ctrl_t;
+
 
     extern char tls_cli_ip_addr[32];
 

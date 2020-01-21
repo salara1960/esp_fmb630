@@ -116,6 +116,8 @@ typedef struct {
 extern const char *TAGFTP;
 extern uint8_t ftp_start;
 extern int getFileOK;
+extern uint8_t ftp_go_flag;
+
 
 extern FtpClient *getFtpClient(void);
 extern void ftp_cli_task(void *arg);

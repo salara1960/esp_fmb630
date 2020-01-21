@@ -20,6 +20,7 @@ int main(void)
 const char *TAGFTP = "FTP";
 uint8_t ftp_start = 0;
 int getFileOK = 0;
+uint8_t ftp_go_flag = 0;
 
 struct NetBuf {
     char *cput;
@@ -1165,6 +1166,8 @@ ftp_start = 1;
 total_task++;
 s_ftp_var fvar;
 int ret = 0;
+
+    getFileOK = ret;
 
     memcpy((uint8_t *)&fvar, (uint8_t *)arg, sizeof(s_ftp_var));
 

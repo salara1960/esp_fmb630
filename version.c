@@ -35,6 +35,7 @@
 //const char *Version = "3.7 (16.01.2020)";//Major changes : add ftp client (first step)
 //const char *Version = "3.8 (17.01.2020)";//Major changes : save configuration file from ftp_server to /spiflash/conf.txt
 //const char *Version = "3.9 (19.01.2020)";//Minor changes : add to NVS_FLASH param's for ftp server
-const char *Version = "4.0 (20.01.2020)";//Minor changes : add mutex to print_msg() function
+//const char *Version = "4.0 (20.01.2020)";//Minor changes : add mutex to print_msg() function
+const char *Version = "4.1 (21.01.2020)";//Major changes : add tls_server task with control of device (11 ctrl commands)
 
 

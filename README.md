@@ -61,6 +61,22 @@ make flash      - запись бинарного кода проекта в dat
 - "SET_ALL",       //{"command":48,"param":"X1,Y1 X2,Y2 X3,Y3 X4,Y4 X5,Y5 X6,Y6 X7,Y7 X8,Y8"}
 ```
 
+## Команды контроля параметров для TSL сервера :
+
+```
+- {"auth":"hash"} - hash md5_from_key_word
+- {"udp":"on"} , {"udp":"off"}
+- {"sntp":"on"}
+- {"sntp_srv":"ip_ntp_server"}
+- {"time_zone":"UTC+02:00"}
+- {"restart":"on"}
+- {"time":"1493714647"} , {"time":1493714647}
+- {"ftp_go":"on"}
+- {"ftp_srv":"10.100.0.201:21"}
+- {"ftp_user":"user:password"}
+- {"get":"status"}
+```
+
 
 ## Пример логов при работе модуля :
 ```

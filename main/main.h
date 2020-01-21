@@ -246,6 +246,9 @@ extern int check_tmr(uint32_t tm);
 
 extern void print_msg(uint8_t with, const char *tag, const char *fmt, ...);
 
+extern esp_err_t read_param(char *param_name, void *param_data, size_t len);
+extern esp_err_t save_param(char *param_name, void *param_data, size_t len);
+
 
 #ifdef SET_NET_LOG
     #include "tcp_srv.h"
@@ -256,6 +259,8 @@ extern void print_msg(uint8_t with, const char *tag, const char *fmt, ...);
 #ifdef SET_SNTP
     #include "sntp_cli.h"
 
+    extern uint8_t sntp_go;
+    extern char work_sntp[sntp_srv_len];
     extern char time_zone[sntp_srv_len];
 #endif
 
