@@ -13,34 +13,34 @@ uint8_t tls_hangup = 0;
 char tls_cli_ip_addr[32] = {0};
 
 #define cmd_name_all 11
-const char *CmdName[] = {
-    "auth",//0
-    "udp",//1
-    "sntp",//2
-    "sntp_srv",//3
-    "time_zone",//4
-    "restart",//5
-    "time",//6
-    "ftp_go",//7
-    "ftp_srv",//8
-    "ftp_user",//9
-    "get"//10
+const char *CtrlName[] = {
+    "auth",     //0//{"auth":"hash"} - hash md5_from_key_word
+    "udp",      //1//{"udp":"on"} , {"udp":"off"}
+    "sntp",     //2//{"sntp":"on"}
+    "sntp_srv", //3//{"sntp_srv":"ip_ntp_server"}
+    "time_zone",//4//{"time_zone":"UTC+02:00"}
+    "restart",  //5//{"restart":"on"}
+    "time",     //6//{"time":"1493714647"} , {"time":1493714647}
+    "ftp_go",   //7//{"ftp_go":"on"}
+    "ftp_srv",  //8//{"ftp_srv":"10.100.0.201:21"}
+    "ftp_user", //9//{"ftp_user":"login:password"}
+    "get"       //10//{"get":"status"},{"get":"wifi"},{"get":"sntp_srv"},{"get":"time_zone"},{"get":"ftp_srv"},{"get":"ftp_user"},{"get":"log_port"},{"get":"version"}
 };//9
-//{"auth":"hash"} - hash md5_from_key_word
-//{"udp":"on"} , {"udp":"off"}
-//{"sntp":"on"}
-//{"sntp_srv":"ip_ntp_server"}
-//{"time_zone":"UTC+02:00"}
-//{"restart":"on"}
-//{"time":"1493714647"} , {"time":1493714647}
-//{"ftp_go":"on"}
-//{"ftp_srv":"10.100.0.101:9221"}
-//{"ftp_user":"test:9999"}
-//{"get":"status"}
 
 const char *l_on  = "on";
 const char *l_off = "off";
 
+#define sub_cmd_name_all 8
+const char *SubCtrlName[] = {
+    "status",
+    "wifi",     //{"wifi":"ssid:password"}
+    "sntp_srv", //{"sntp_srv":"2.ru.pool.ntp.org"}
+    "time_zone",//{"time_zone":"UTC+02:00"}
+    "ftp_srv",  //{"ftp_srv":"192.168.0.201:21"}
+    "ftp_user", //{"ftp_user":"login:password"}
+    "log_port", //{"log_port":"8008"}
+    "version"   //{"version":"4.2 (22.01.2020)"}
+};
 //------------------------------------------------------------------------------------------
 char *get_json_str(cJSON *tp)
 {
@@ -63,7 +63,6 @@ int parser_json_str(const char *st, uint8_t *au, const char *str_md5, uint8_t *r
 int yes = -1;
 uint8_t done = 0, ind_c = 255, rcpu = 0;
 int k, i, val_bin = -1;
-char stz[64];
 char *uki = NULL;
 
 
@@ -72,14 +71,10 @@ char *uki = NULL;
         cJSON *tmp = NULL;
         char *val = NULL;
         for (i = 0; i < cmd_name_all; i++) {
-            tmp = cJSON_GetObjectItem(obj, CmdName[i]);
+            tmp = cJSON_GetObjectItem(obj, CtrlName[i]);
             if (tmp) {
                 ind_c = i;
                 switch (tmp->type) {
-                    case cJSON_False:
-                    case cJSON_True:
-                    case cJSON_NULL:
-                    break;
                     case cJSON_Number:
                         val_bin = tmp->valueint;
                     break;
@@ -87,10 +82,7 @@ char *uki = NULL;
                         if (val) { free(val); val = NULL; }
                         val = get_json_str(tmp);
                     break;
-                    case cJSON_Array://error !
-                    break;
-                    case cJSON_Object:
-                    break;
+                        default : break;
                 }
                 done = 0;
                 if ((val) || (val_bin != -1)) {
@@ -215,17 +207,16 @@ char *uki = NULL;
                             if (val) {
                                 k = strlen(val);
                                 if (k > 0) {
-                                    uint16_t prt = 9221;
+                                    ftp_srv_port = FTP_SRV_PORT_DEF;
                                     uki = strchr(val, ':');
                                     if (uki) {
-                                        prt = atoi(uki + 1);
+                                        ftp_srv_port = atoi(uki + 1);
                                         *uki = '\0';
                                     }
-                                    if (strlen(stz) > 16) stz[16] = 0;
-                                    memset(stz, 0, sizeof(stz));
-                                    strcpy(stz, val);
-                                    save_param(PARAM_FTP_SRV_ADDR_NAME, (void *)stz, 16);
-                                    save_param(PARAM_FTP_SRV_PORT_NAME, (void *)&prt, sizeof(uint16_t));
+                                    memset(ftp_srv_addr, 0, sizeof(ftp_srv_addr));
+                                    strncpy(ftp_srv_addr, val, ftp_pole_len);
+                                    save_param(PARAM_FTP_SRV_ADDR_NAME, (void *)ftp_srv_addr, sizeof(ftp_srv_addr));
+                                    save_param(PARAM_FTP_SRV_PORT_NAME, (void *)&ftp_srv_port, sizeof(uint16_t));
                                     yes = 0;
                                 }
                                 done = 1;
@@ -233,16 +224,15 @@ char *uki = NULL;
                         break;
                         case CTRL_FTP_USER://9://{"ftp_user":"login:password"}
                             if (val) {
-                                char *uki = strchr(val, ':');
+                                uki = strchr(val, ':');
                                 if (uki) {
-                                    k = strlen(val);
-                                    if ((k > 0) && (k < (34))) {
-                                        memset(stz, 0, sizeof(stz));
-                                        strcpy(stz, uki + 1);
-                                        *uki = '\0';//val - login, stz - password
-                                        if (save_param(PARAM_FTP_SRV_LOGIN_NAME, (void *)val, strlen(val)) == ESP_OK) {
-                                            if (save_param(PARAM_FTP_SRV_PASSWD_NAME, (void *)stz, strlen(stz)) == ESP_OK) yes=0;
-                                        }
+                                    if (strlen(val) > 0) {
+                                        memset(ftp_srv_login, 0, sizeof(ftp_srv_login));
+                                        memset(ftp_srv_passwd, 0, sizeof(ftp_srv_passwd));
+                                        strncpy(ftp_srv_login, val, sizeof(ftp_srv_login));
+                                        strncpy(ftp_srv_passwd, uki + 1, sizeof(ftp_srv_passwd));
+                                        save_param(PARAM_FTP_SRV_LOGIN_NAME, (void *)ftp_srv_login, sizeof(ftp_srv_login));
+                                        save_param(PARAM_FTP_SRV_PASSWD_NAME, (void *)ftp_srv_passwd, sizeof(ftp_srv_passwd));
                                     }
                                 }
                                 done = 1;
@@ -262,7 +252,7 @@ char *uki = NULL;
 
                     }//switch (ind_c)
                 }//if ((val) || (val_bin != -1))
-                if (val != NULL) free(val);
+                if (val) free(val);
                 val = NULL;
                 val_bin = -1;
                 if (done) break;

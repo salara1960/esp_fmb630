@@ -61,10 +61,10 @@ esp_err_t fs_ok = ESP_FAIL;;
 uint32_t tls_client_ip = 0;
 
 #ifdef SET_FTP_CLI
-    static char ftp_srv_addr[ftp_pole_len] = {0};
-    static uint16_t ftp_srv_port;
-    static char ftp_srv_login[ftp_pole_len] = {0};
-    static char ftp_srv_passwd[ftp_pole_len] = {0};
+    char ftp_srv_addr[ftp_pole_len] = {0};
+    uint16_t ftp_srv_port;
+    char ftp_srv_login[ftp_pole_len] = {0};
+    char ftp_srv_passwd[ftp_pole_len] = {0};
 #endif
 
 #ifdef UDP_SEND_BCAST
@@ -392,15 +392,11 @@ nvs_handle mhd;
 
     esp_err_t err = nvs_open(STORAGE_NAMESPACE, NVS_READONLY, &mhd);
     if (err != ESP_OK) {
-#ifdef SET_ERROR_PRINT
         ESP_LOGE(TAGN, "%s(%s): Error open '%s'", __func__, param_name, STORAGE_NAMESPACE);
-#endif
     } else {//OK
         err = nvs_get_blob(mhd, param_name, param_data, &len);
         if (err != ESP_OK) {
-#ifdef SET_ERROR_PRINT
             ESP_LOGE(TAGN, "%s: Error read '%s' from '%s'", __func__, param_name, STORAGE_NAMESPACE);
-#endif
         }
         nvs_close(mhd);
     }
@@ -414,15 +410,11 @@ nvs_handle mhd;
 
     esp_err_t err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &mhd);
     if (err != ESP_OK) {
-#ifdef SET_ERROR_PRINT
         ESP_LOGE(TAGN, "%s(%s): Error open '%s'", __func__, param_name, STORAGE_NAMESPACE);
-#endif
     } else {
         err = nvs_set_blob(mhd, param_name, (uint8_t *)param_data, len);
         if (err != ESP_OK) {
-#ifdef SET_ERROR_PRINT
             ESP_LOGE(TAGN, "%s: Error save '%s' with len %u to '%s'", __func__, param_name, len, STORAGE_NAMESPACE);
-#endif
         } else err = nvs_commit(mhd);
         nvs_close(mhd);
     }
@@ -757,9 +749,7 @@ void app_main()
 #ifdef SET_SNTP
     if (wmode & 1) {// WIFI_MODE_STA) || WIFI_MODE_APSTA
         if (xTaskCreatePinnedToCore(&sntp_task, "sntp_task", STACK_SIZE_2K, work_sntp, 10, NULL, 0) != pdPASS) {//5,NULL,1
-            #ifdef SET_ERROR_PRINT
-                ESP_LOGE(TAGS, "Create sntp_task failed | FreeMem %u", xPortGetFreeHeapSize());
-            #endif
+            ESP_LOGE(TAGS, "Create sntp_task failed | FreeMem %u", xPortGetFreeHeapSize());
         }
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
@@ -770,9 +760,7 @@ void app_main()
     msgq = xQueueCreate(8, sizeof(s_net_msg));//create msg queue
 
     if (xTaskCreatePinnedToCore(&net_log_task, "net_log_task", 4*STACK_SIZE_1K, &net_log_port, 6, NULL, 1) != pdPASS) {//7,NULL,1
-        #ifdef SET_ERROR_PRINT
-            ESP_LOGE(TAGS, "Create net_log_task failed | FreeMem %u", xPortGetFreeHeapSize());
-        #endif
+        ESP_LOGE(TAGS, "Create net_log_task failed | FreeMem %u", xPortGetFreeHeapSize());
     }
     vTaskDelay(1000 / portTICK_RATE_MS);
 #endif
@@ -906,9 +894,7 @@ void app_main()
     }
 
     if (xTaskCreatePinnedToCore(&fmb630_task, "fmb630_task", 8*STACK_SIZE_1K, &gps_ini, 9, NULL, 0) != pdPASS) {
-        #ifdef SET_ERROR_PRINT
-            ESP_LOGE(TAGGPS, "Create fmb630_task failed | FreeMem %u", xPortGetFreeHeapSize());
-        #endif
+        ESP_LOGE(TAGGPS, "Create fmb630_task failed | FreeMem %u", xPortGetFreeHeapSize());
     }
     vTaskDelay(1000 / portTICK_RATE_MS);
 #endif
@@ -943,9 +929,7 @@ void app_main()
     strcpy(farg.devPath, FTP_PATH_DEF);
     strcpy(farg.devConf, FTP_CONF_DEF);
     if (xTaskCreatePinnedToCore(&ftp_cli_task, "ftp_cli_task", 8*STACK_SIZE_1K, &farg, 8, NULL, 1) != pdPASS) {
-        #ifdef SET_ERROR_PRINT
-            ESP_LOGE(TAGGPS, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
-        #endif
+        ESP_LOGE(TAGGPS, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
     }
     vTaskDelay(1000 / portTICK_RATE_MS);
 
@@ -954,17 +938,15 @@ void app_main()
 
 #ifdef SET_TLS_SRV
     if (xTaskCreatePinnedToCore(&tls_task, "tls_task", 8*STACK_SIZE_1K, &tls_port, 8, NULL, 0) != pdPASS) {//6,NULL,1)
-        #ifdef SET_ERROR_PRINT
-            ESP_LOGE(TAGTLS, "Create tls_task failed | FreeMem %u", xPortGetFreeHeapSize());
-        #endif
+        ESP_LOGE(TAGTLS, "Create tls_task failed | FreeMem %u", xPortGetFreeHeapSize());
     }
     vTaskDelay(500 / portTICK_RATE_MS);
     static uint8_t screen = 0;
 #endif
 
-
+/**/
     check_pin(GPIO_RESTART_PIN);
-
+/**/
 
     while (!restart_flag) {//main loop
 
@@ -997,7 +979,7 @@ void app_main()
                     }
                 }
 #endif
-//                sprintf(stk+strlen(stk), "  GPIO_35=%u", check_pin(GPIO_RESTART_PIN));
+                /*sprintf(stk+strlen(stk), "  GPIO_35=%u", gpio_get_level(GPIO_RESTART_PIN));*/
                 ssd1306_text_xy(stk, 2, 1);
             }
             adc_tw = get_tmr(_1s);
@@ -1010,9 +992,7 @@ void app_main()
                 if (!sntp_start) {
                     sntp_go = 0;
                     if (xTaskCreatePinnedToCore(&sntp_task, "sntp_task", STACK_SIZE_2K, work_sntp, 5, NULL, 0)  != pdPASS) {//5//7 core=1
-                    #ifdef SET_ERROR_PRINT
                         ESP_LOGE(TAGS, "Create sntp_task failed | FreeMem %u", xPortGetFreeHeapSize());
-                    #endif
                     }
                     vTaskDelay(500 / portTICK_RATE_MS);
                 } else vTaskDelay(50 / portTICK_RATE_MS);
@@ -1022,9 +1002,7 @@ void app_main()
 #ifdef UDP_SEND_BCAST
             if ((!udp_start) && (udp_flag == 1)) {
                 if (xTaskCreatePinnedToCore(&udp_task, "disk_task", STACK_SIZE_1K5, NULL, 5, NULL, 0) != pdPASS) {//5,NULL,1)
-                #ifdef SET_ERROR_PRINT
                     ESP_LOGE(TAGU, "Create udp_task failed | FreeMem %u", xPortGetFreeHeapSize());
-                #endif
                 }
                 vTaskDelay(500 / portTICK_RATE_MS);
             }
@@ -1039,10 +1017,6 @@ void app_main()
                 esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
                 print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
                 diskOK = ESP_FAIL;
-                /*if (getFileOK > 0) {
-                    restart_flag = 1;
-                    break;
-                }*/
             }
 #endif
             }
@@ -1054,30 +1028,29 @@ void app_main()
                 if (diskOK == ESP_OK) {
                     farg.devMnt = diskOK;
                     if (xTaskCreatePinnedToCore(&ftp_cli_task, "ftp_cli_task", 8*STACK_SIZE_1K, &farg, 8, NULL, 1) != pdPASS) {
-                        #ifdef SET_ERROR_PRINT
-                            ESP_LOGE(TAGGPS, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
-                        #endif
+                        ESP_LOGE(TAGGPS, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
                     } else vTaskDelay(500 / portTICK_RATE_MS);
                 }
             }
         }
 #endif
 
-        if (!gpio_get_level(GPIO_RESTART_PIN)) {
+/**/
+       if (gpio_get_level(GPIO_RESTART_PIN)) {
             print_msg(1, TAG, "!!! RESTART_PIN is PRESSED !!!\n");
             restart_flag = 1;
             break;
         }
+/**/
 
     }//while (!restart_flag)
 
-//    vTaskDelay(1000 / portTICK_RATE_MS);
 
-    uint8_t cnt = 100;
-    print_msg(1, TAG, "Waiting for all task closed...%d sec.\n", cnt);
+    uint8_t cnt = 20;
+    print_msg(1, TAG, "Waiting for all task closed...%d sec.\n", cnt/10);
     while (total_task) {
         cnt--; if (!cnt) break;
-        vTaskDelay(200 / portTICK_RATE_MS);
+        vTaskDelay(100 / portTICK_RATE_MS);
     }
     print_msg(1, TAG, "(%d) DONE. Total unclosed task %d\n", cnt, total_task);
 

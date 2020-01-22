@@ -145,7 +145,7 @@
 #define GPIO_WIFI_PIN     4
 #define GPIO_WMODE_PIN   15 //1-STA  0-AP
 #define GPIO_DELIT_PIN    2 //delete all files from /spiflash
-#define GPIO_RESTART_PIN 35 //0 - restart_flag = 1
+#define GPIO_RESTART_PIN 35
 
 #define ADC1_TEST_CHANNEL (6) //6 channel connect to pin34
 #define ADC1_TEST_PIN    34 //pin34
@@ -288,6 +288,11 @@ extern esp_err_t save_param(char *param_name, void *param_data, size_t len);
 
 #ifdef SET_FTP_CLI
     #include "ftp_cli.h"
+
+    extern char ftp_srv_addr[ftp_pole_len];
+    extern uint16_t ftp_srv_port;
+    extern char ftp_srv_login[ftp_pole_len];
+    extern char ftp_srv_passwd[ftp_pole_len];
 #endif
 
 

@@ -5,7 +5,7 @@
 
 ## Состав проекта:
 
-* Hardware part : esp32(DevKitC board) + ssd1306(i2c) + SDCard + 2LED
+* Hardware part : esp32(DevKitC board) + ssd1306(i2c) + SDCard + 2LED + CATALEX Touch sensor(restart pin)
 
 * Software part : fmb630_client + ftp_client + sntp_client + udp_client + log_server + tls_server + FreeRTOS
 
@@ -80,31 +80,31 @@ make flash      - запись бинарного кода проекта в dat
 
 ## Пример логов при работе модуля :
 ```
-App version 3.9 (19.01.2020) | MAC 24:0a:c4:05:ef:90 | SDK Version v4.1-dev-1795-gca8fac8 | FreeMem 278000
-[VFS] Started timer with period 100 ms, time since boot: 2531025/0
+App version 4.2 (22.01.2020) | MAC 24:0a:c4:05:ef:90 | SDK Version v4.1-dev-1935-g647cb62 | FreeMem 275696
+[VFS] Started timer with period 100 ms, time since boot: 2530048/0
 [VFS] DEVICE_ID='C405EF90'
 [VFS] SNTP_SERVER '2.ru.pool.ntp.org' TIME_ZONE 'EET-2'
 [VFS] WIFI_MODE (1): STA
 [VFS] WIFI_STA_PARAM: 'ssid:password'
-[VFS] FTP SERVER : '192.168.0.101:9221' (login/passwd)
+[VFS] TLS_PORT: 4545
+[VFS] FTP SERVER : '192.168.0.201:21' (login/passwd)
 [WIFI] WIFI_MODE - STA: 'ssid':'password'
-[WIFI] Connected to AP 'ssid' auth(3):'AUTH_WPA2_PSK' chan:11 rssi:-36
+[WIFI] Connected to AP 'ssid' auth(3):'AUTH_WPA2_PSK' chan:3 rssi:-36
+[NTP] Start sntp_task | FreeMem 238252
+[LOG] Start NetLogServer task (port=8008)| FreeMem 233680
 [WIFI] Local ip_addr : 192.168.0.100
-[NTP] Start sntp_task | FreeMem 240768
 [NTP] Getting time from SNTP server '2.ru.pool.ntp.org'.
-[LOG] Start NetLogServer task (port=8008)| FreeMem 235836
-[LOG] Wait new log_client... | FreeMem 235468
-[NTP] The current date/time is: Sun Jan 19 22:10:41 2020 EET-2
-[NTP] Stop sntp_task | FreeMem 235360
-19.01 22:10:42 [CARD] Failed to initialize the sdcard
-19.01 22:10:42 [DISK] Mount FATFS partition 'disk' on device '/spiflash' OK (size=966656)
-19.01 22:10:42 [DISK] === GPIO_DELIT_PIN(2)=1 ===
-19.01 22:10:42 [DISK] Open DIR '/spiflash/':
+[LOG] Wait new log_client... | FreeMem 232772
+[NTP] The current date/time is: Wed Jan 22 12:16:47 2020 EET-2
+[NTP] Stop sntp_task | FreeMem 232840
+22.01 12:16:48 [CARD] Failed to initialize the sdcard
+22.01 12:16:49 [DISK] Mount FATFS partition 'disk' on device '/spiflash' OK (size=966656)
+22.01 12:16:49 [DISK] === GPIO_DELIT_PIN(2)=1 ===
+22.01 12:16:49 [DISK] Open DIR '/spiflash/':
         file: type=1 name='CONF.TXT' size=393
-        file: type=1 name='CONFIG.TXT' size=393
-19.01 22:10:42 [GPS] Configuration file '/spiflash/conf.txt' present:
-[GPS] Start fmb630 task | FreeMem 200204
-19.01 22:10:42 [GPS] START FMB630 :
+22.01 12:16:50 [GPS] Configuration file '/spiflash/conf.txt' present:
+[GPS] Start fmb630 task | FreeMem 197692
+22.01 12:16:50 [GPS] START FMB630 :
         srv=192.168.0.101:9900
         imei=351580051430040
         mode=1
@@ -113,7 +113,7 @@ App version 3.9 (19.01.2020) | MAC 24:0a:c4:05:ef:90 | SDK Version v4.1-dev-1795
         wait_before_new_connect=15
         location=55.803890,37.403015
         total_scena=8
-19.01 22:10:42 [GPS] Total records in list 8 :
+22.01 12:16:50 [GPS] Total records in list 8 :
         [1] 'Park'(0):0:5
         [2] 'North-West'(6):1500:20
         [3] 'North-East'(5):1500:20
@@ -122,32 +122,41 @@ App version 3.9 (19.01.2020) | MAC 24:0a:c4:05:ef:90 | SDK Version v4.1-dev-1795
         [6] 'South'(3):1500:20
         [7] 'North'(1):1500:20
         [8] 'Stop'(9):0:5
-19.01 22:10:43 [GPS] Connect to 192.168.0.101:9900 OK
-19.01 22:10:43 [GPS] data to server (17):00 0F 33 35 31 35 38 30 30 35 31 34 33 30 30 34 30
-19.01 22:10:43 [GPS] data from server (1):01
-19.01 22:10:43 [GPS] Access ganted !!!
-19.01 22:10:43 [GPS] Get record [1] 'Park'(0):0:5
-19.01 22:10:43 [GPS] [1] msg #1 from 5
-19.01 22:10:43 [GPS] Send packet #1 with len=107 to server:
-000000000000005F08010000016FBF6DD1B800164B3F402142FF800008000003000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD800000000000100003FAA
-19.01 22:10:43 [GPS] data from server (4) :00000001
-19.01 22:10:43 [FTP] Start ftp_client task | FreeMem 172208
-19.01 22:10:44 [FTP] Stop ftp_client task (ret=1) | FreeMem 171420
-19.01 22:10:44 [DISK] Unmounted FAT filesystem partition 'disk' | FreeMem 208428
-19.01 22:11:08 [LOG] New log_client 192.168.0.101:38428 (soc=56) online | FreeMem 208044
-19.01 22:11:13 [GPS] Get record [1] 'Park'(0):0:5
-19.01 22:11:13 [GPS] [1] msg #1 from 5
-19.01 22:11:13 [GPS] Send packet #2 with len=107 to server:
-000000000000005F08010000016FBF6E46E800164B3F402142FF80000800000B000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD800000000000100008DEB
-19.01 22:11:13 [GPS] data from server (4) :00000001
-19.01 22:11:43 [GPS] Get record [1] 'Park'(0):0:5
-19.01 22:11:43 [GPS] [1] msg #1 from 5
-19.01 22:11:43 [GPS] Send packet #3 with len=199 to server:
-00000000000000BB08020000016FBF6EBC1800164B3F402142FF800008000009000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD800000000000000016FBF6EBC1800164B3F402142FF800008000009000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD800000000000200004695
-19.01 22:11:43 [GPS] data from server (4) :00000002
-19.01 22:11:46 [GPS] Error code 0x02 :
-        Server closed connection without answer.
-19.01 22:11:46 [GPS] Sleep 15 sec before try next connection...(ses 63 sec.) | FreeMem 208028
+22.01 12:16:50 [GPS] Connect to 192.168.0.101:9900 OK
+22.01 12:16:50 [GPS] data to server (17):00 0F 33 35 31 35 38 30 30 35 31 34 33 30 30 34 30
+22.01 12:16:50 [GPS] data from server (1):01
+22.01 12:16:50 [GPS] Access ganted !!!
+22.01 12:16:50 [GPS] Get record [1] 'Park'(0):0:5
+22.01 12:16:50 [GPS] [1] msg #1 from 5
+22.01 12:16:50 [GPS] Send packet #1 with len=107 to server:
+000000000000005F08010000016FCCC12E5000164B3F402142FF800008000003000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD80000000000010000F1B4
+22.01 12:16:50 [GPS] data from server (4) :00000001
+22.01 12:16:51 [FTP] Start ftp_client task | FreeMem 169604
+22.01 12:16:51 [FTP] [connectFtpClient] Try connect to FTP server 192.168.0.201:21
+22.01 12:16:51 [FTP] [connectFtpClient] FTP Client Error: connect() error
+22.01 12:16:51 [FTP] Stop ftp_client task (ret=0) | FreeMem 169360
+22.01 12:16:52 [TLS] TLS server task starting...(port=4545) | FreeMem=169432
+22.01 12:16:52 [TLS] Wait new connection...
+22.01 12:16:53 [DISK] Unmounted FAT filesystem partition 'disk' | FreeMem 171204
+22.01 12:17:20 [GPS] Get record [1] 'Park'(0):0:5
+22.01 12:17:20 [GPS] [1] msg #1 from 5
+22.01 12:17:20 [GPS] Send packet #2 with len=107 to server:
+000000000000005F08010000016FCCC1A38000164B3F402142FF80000800000B000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD800000000000100003AE6
+22.01 12:17:20 [GPS] data from server (4) :00000001
+22.01 12:17:50 [GPS] Get record [1] 'Park'(0):0:5
+22.01 12:17:50 [GPS] [1] msg #1 from 5
+22.01 12:17:50 [GPS] Send packet #3 with len=199 to server:
+00000000000000BB08020000016FCCC218B000164B3F402142FF800008000009000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD800000000000000016FCCC218B000164B3F402142FF800008000009000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD80000000000020000A337
+22.01 12:17:50 [GPS] data from server (4) :00000002
+22.01 12:18:13 [LOG] New log_client 192.168.0.101:50654 (soc=57) online | FreeMem 170644
+22.01 12:18:20 [GPS] Get record [1] 'Park'(0):0:5
+22.01 12:18:20 [GPS] [1] msg #1 from 5
+22.01 12:18:20 [GPS] Send packet #4 with len=199 to server:
+00000000000000BB08020000016FCCC28DE000164B3F402142FF800008000003000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD800000000000000016FCCC28DE000164B3F402142FF800008000003000000170D0100020103010401B300B4003200330016034703F0001504EF00070902EE0A01460B04B04326C5440032422F0C18000003C700000000F10000620BD800000000000200007AE4
+22.01 12:18:20 [GPS] data from server (4) :00000002
+.
+.
+.
 ```
 
 
