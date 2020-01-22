@@ -37,4 +37,6 @@
 //const char *Version = "3.9 (19.01.2020)";//Minor changes : add to NVS_FLASH param's for ftp server
 //const char *Version = "4.0 (20.01.2020)";//Minor changes : add mutex to print_msg() function
 //const char *Version = "4.1 (21.01.2020)";//Major changes : add tls_server task with control of device (11 ctrl commands)
-const char *Version = "4.2 (22.01.2020)";//Minor changes in tls_server
+//const char *Version = "4.2 (22.01.2020)";//Minor changes in tls_server
+const char *Version = "4.3 (22.01.2020)";//Major changes in tls_server : for ctrl_command 'get' add 8 sub_ctrl_commands
+

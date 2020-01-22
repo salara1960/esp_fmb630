@@ -74,7 +74,7 @@ make flash      - запись бинарного кода проекта в dat
 - {"ftp_go":"on"}
 - {"ftp_srv":"10.100.0.201:21"}
 - {"ftp_user":"user:password"}
-- {"get":"status"}
+- {"get":"status"},{"get":"wifi"},{"get":"sntp_srv"},{"get":"time_zone"},{"get":"ftp_srv"},{"get":"ftp_user"},{"get":"log_port"},{"get":"version"}
 ```
 
 

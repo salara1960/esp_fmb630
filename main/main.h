@@ -207,6 +207,7 @@ typedef struct {
 } s_log_t;
 #pragma pack(pop)
 
+extern const char *Version;
 
 extern uint32_t cli_id;
 
@@ -253,6 +254,7 @@ extern esp_err_t save_param(char *param_name, void *param_data, size_t len);
 #ifdef SET_NET_LOG
     #include "tcp_srv.h"
 
+    uint16_t net_log_port;
     xQueueHandle msgq;
 #endif
 

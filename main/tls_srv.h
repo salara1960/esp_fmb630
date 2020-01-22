@@ -46,18 +46,28 @@
     #pragma pack(pop)
 
     typedef enum {
-        CTRL_AUTH = 0,//"auth"//0
-        CTRL_UDP,//"udp"//1
-        CTRL_SNTP,//"sntp"//2
-        CTRL_SNTP_SRV,//"sntp_srv"//3
-        CTRL_TIME_ZONE,//"time_zone"//4
-        CTRL_RESTART,//"restart"//5
-        CTRL_TIME,//"time"//6
-        CTRL_FTP_GO,//"ftp_go"//7
-        CTRL_FTP_SRV,//"ftp_srv"//8
-        CTRL_FTP_USER,//"ftp_user"//9
-        CTRL_GET//"get"//10
-    } e_ctrl_t;
+        iCTRL_AUTH = 0,//"auth"//0
+        iCTRL_UDP,//"udp"//1
+        iCTRL_SNTP,//"sntp"//2
+        iCTRL_SNTP_SRV,//"sntp_srv"//3
+        iCTRL_TIME_ZONE,//"time_zone"//4
+        iCTRL_RESTART,//"restart"//5
+        iCTRL_TIME,//"time"//6
+        iCTRL_FTP_GO,//"ftp_go"//7
+        iCTRL_FTP_SRV,//"ftp_srv"//8
+        iCTRL_FTP_USER,//"ftp_user"//9
+        iCTRL_GET//"get"//10
+    } i_ctrl_t;
+    typedef enum {
+        sCTRL_STATUS = 0,//"status",
+        sCTRL_WIFI,//"wifi",     //{"wifi":"ssid:password"}
+        sCTRL_SNTP_SRV,//"sntp_srv", //{"sntp_srv":"2.ru.pool.ntp.org"}
+        sCTRL_TIME_ZONE,//"time_zone",//{"time_zone":"UTC+02:00"}
+        sCTRL_FTP_SRV,//"ftp_srv",  //{"ftp_srv":"192.168.0.201:21"}
+        sCTRL_FTP_USER,//"ftp_user", //{"ftp_user":"login:password"}
+        sCTRL_LOG_PORT,//"log_port", //{"log_port":"8008"}
+        sCTRL_VERSION//"version"   //{"version":"4.2 (22.01.2020)"}
+    } s_ctrl_t;
 
 
     extern char tls_cli_ip_addr[32];

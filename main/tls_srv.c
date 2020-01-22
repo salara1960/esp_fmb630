@@ -20,7 +20,7 @@ const char *CtrlName[] = {
     "sntp_srv", //3//{"sntp_srv":"ip_ntp_server"}
     "time_zone",//4//{"time_zone":"UTC+02:00"}
     "restart",  //5//{"restart":"on"}
-    "time",     //6//{"time":"1493714647"} , {"time":1493714647}
+    "time",     //6//{"time":"1579692184"} , {"time":1579692184}
     "ftp_go",   //7//{"ftp_go":"on"}
     "ftp_srv",  //8//{"ftp_srv":"10.100.0.201:21"}
     "ftp_user", //9//{"ftp_user":"login:password"}
@@ -35,7 +35,7 @@ const char *SubCtrlName[] = {
     "status",
     "wifi",     //{"wifi":"ssid:password"}
     "sntp_srv", //{"sntp_srv":"2.ru.pool.ntp.org"}
-    "time_zone",//{"time_zone":"UTC+02:00"}
+    "time_zone",//{"time_zone":"EET-2"}
     "ftp_srv",  //{"ftp_srv":"192.168.0.201:21"}
     "ftp_user", //{"ftp_user":"login:password"}
     "log_port", //{"log_port":"8008"}
@@ -60,7 +60,7 @@ char *get_json_str(cJSON *tp)
 //------------------------------------------------------------------------------------------
 int parser_json_str(const char *st, uint8_t *au, const char *str_md5, uint8_t *rst)
 {
-int yes = -1;
+int yes = -1, subc = 0;
 uint8_t done = 0, ind_c = 255, rcpu = 0;
 int k, i, val_bin = -1;
 char *uki = NULL;
@@ -87,7 +87,7 @@ char *uki = NULL;
                 done = 0;
                 if ((val) || (val_bin != -1)) {
                     switch (ind_c) {
-                        case CTRL_AUTH://0://auth
+                        case iCTRL_AUTH://0://auth
                             if (val) {
                                 done = 1;
                                 if ((au) && (str_md5)) {
@@ -99,7 +99,7 @@ char *uki = NULL;
                             }
                         break;
 #ifdef UDP_SEND_BCAST
-                        case CTRL_UDP://1://udp
+                        case iCTRL_UDP://1://udp
                             if (val) {
                                 if (au) {//from tls_client
                                     if (*au) {
@@ -117,7 +117,7 @@ char *uki = NULL;
                         break;
 #endif
 #ifdef SET_SNTP
-                        case CTRL_SNTP://2://sntp
+                        case iCTRL_SNTP://2://sntp
                             if (val) {
                                 if (au) {//from tls_client
                                     if (*au) {
@@ -130,7 +130,7 @@ char *uki = NULL;
                                 done = 1;
                             }
                         break;
-                        case CTRL_SNTP_SRV://3://sntp_srv
+                        case iCTRL_SNTP_SRV://3://sntp_srv
                             if (val) {
                                 if (au) {//from tls_client
                                     if (*au) {
@@ -145,7 +145,7 @@ char *uki = NULL;
                                 done = 1;
                             }
                         break;
-                        case CTRL_TIME_ZONE://4://time_zone
+                        case iCTRL_TIME_ZONE://4://time_zone
                             if (val) {
                                 if (au) {//from tls_client
                                     if (*au) {
@@ -165,7 +165,7 @@ char *uki = NULL;
                             }
                         break;
 #endif
-                        case CTRL_RESTART://5://restart
+                        case iCTRL_RESTART://5://restart
                             if (val) {
                                 if (au) {//from tls_client
                                     if (*au) {
@@ -179,12 +179,12 @@ char *uki = NULL;
                                 if (rst) *rst = rcpu;
                             }
                         break;
-                        case CTRL_TIME://6://time
-                            k = -1;
-                            if (val) k = atoi(val); else if (val_bin != -1) k = val_bin;
-                            if (k > 0) {
-                                if (au) {
-                                    if (*au) {
+                        case iCTRL_TIME://6://time
+                            if (au) {
+                                if (*au) {
+                                    k = -1;
+                                    if (val) k = atoi(val); else if (val_bin != -1) k = val_bin;
+                                    if (k > 0) {
                                         SNTP_SET_SYSTEM_TIME_US( (time_t)k, 0 );
                                         yes = 0;
                                     }
@@ -193,7 +193,7 @@ char *uki = NULL;
                             done = 1;
                         break;
 #ifdef SET_FTP_CLI
-                        case CTRL_FTP_GO://7://{"ftp_go":"on"}
+                        case iCTRL_FTP_GO://7://{"ftp_go":"on"}
                             if (val) {
                                 if (au) {
                                     if (*au) {
@@ -203,47 +203,64 @@ char *uki = NULL;
                                 done = 1;
                             }
                         break;
-                        case CTRL_FTP_SRV://8://{"ftp_srv":"10.100.0.101:9221"}
-                            if (val) {
-                                k = strlen(val);
-                                if (k > 0) {
-                                    ftp_srv_port = FTP_SRV_PORT_DEF;
-                                    uki = strchr(val, ':');
-                                    if (uki) {
-                                        ftp_srv_port = atoi(uki + 1);
-                                        *uki = '\0';
-                                    }
-                                    memset(ftp_srv_addr, 0, sizeof(ftp_srv_addr));
-                                    strncpy(ftp_srv_addr, val, ftp_pole_len);
-                                    save_param(PARAM_FTP_SRV_ADDR_NAME, (void *)ftp_srv_addr, sizeof(ftp_srv_addr));
-                                    save_param(PARAM_FTP_SRV_PORT_NAME, (void *)&ftp_srv_port, sizeof(uint16_t));
-                                    yes = 0;
-                                }
-                                done = 1;
-                            }
-                        break;
-                        case CTRL_FTP_USER://9://{"ftp_user":"login:password"}
-                            if (val) {
-                                uki = strchr(val, ':');
-                                if (uki) {
-                                    if (strlen(val) > 0) {
-                                        memset(ftp_srv_login, 0, sizeof(ftp_srv_login));
-                                        memset(ftp_srv_passwd, 0, sizeof(ftp_srv_passwd));
-                                        strncpy(ftp_srv_login, val, sizeof(ftp_srv_login));
-                                        strncpy(ftp_srv_passwd, uki + 1, sizeof(ftp_srv_passwd));
-                                        save_param(PARAM_FTP_SRV_LOGIN_NAME, (void *)ftp_srv_login, sizeof(ftp_srv_login));
-                                        save_param(PARAM_FTP_SRV_PASSWD_NAME, (void *)ftp_srv_passwd, sizeof(ftp_srv_passwd));
-                                    }
-                                }
-                                done = 1;
-                            }
-                        break;
-#endif
-                        case CTRL_GET://10://{"get":"status"}
+                        case iCTRL_FTP_SRV://8://{"ftp_srv":"10.100.0.101:9221"}
                             if (val) {
                                 if (au) {
                                     if (*au) {
-                                        if (!strcmp(val, "status")) yes = 0;
+                                        k = strlen(val);
+                                        if (k > 0) {
+                                            ftp_srv_port = FTP_SRV_PORT_DEF;
+                                            uki = strchr(val, ':');
+                                            if (uki) {
+                                                ftp_srv_port = atoi(uki + 1);
+                                                *uki = '\0';
+                                            }
+                                            memset(ftp_srv_addr, 0, sizeof(ftp_srv_addr));
+                                            strncpy(ftp_srv_addr, val, ftp_pole_len);
+                                            save_param(PARAM_FTP_SRV_ADDR_NAME, (void *)ftp_srv_addr, sizeof(ftp_srv_addr));
+                                            save_param(PARAM_FTP_SRV_PORT_NAME, (void *)&ftp_srv_port, sizeof(uint16_t));
+                                            yes = 0;
+                                        }
+                                    }
+                                }
+                                done = 1;
+                            }
+                            if (au) if (*au == 0) yes = -1;
+                        break;
+                        case iCTRL_FTP_USER://9://{"ftp_user":"login:password"}
+                            if (val) {
+                                if (au) {
+                                    if (*au) {
+                                        uki = strchr(val, ':');
+                                        if (uki) {
+                                            if (strlen(val) > 0) {
+                                                memset(ftp_srv_login, 0, sizeof(ftp_srv_login));
+                                                memset(ftp_srv_passwd, 0, sizeof(ftp_srv_passwd));
+                                                strncpy(ftp_srv_login, val, sizeof(ftp_srv_login));
+                                                strncpy(ftp_srv_passwd, uki + 1, sizeof(ftp_srv_passwd));
+                                                save_param(PARAM_FTP_SRV_LOGIN_NAME, (void *)ftp_srv_login, sizeof(ftp_srv_login));
+                                                save_param(PARAM_FTP_SRV_PASSWD_NAME, (void *)ftp_srv_passwd, sizeof(ftp_srv_passwd));
+                                                yes = 0;
+                                            }
+                                        }
+                                    }
+                                }
+                                done = 1;
+                            }
+                            if (au) if (*au == 0) yes = -1;
+                        break;
+#endif
+                        case iCTRL_GET://10://{"get":"status"}
+                            if (val) {
+                                if (au) {
+                                    if (*au) {
+                                        for (k = 0; k < sub_cmd_name_all; k++) {
+                                            if (!strcmp(val, SubCtrlName[k])) {
+                                                subc = k;
+                                                yes = 0;
+                                                break;
+                                            }
+                                        }
                                     }
                                 }
                                 done = 1;
@@ -261,7 +278,7 @@ char *uki = NULL;
         cJSON_Delete(obj);
     }//if (obj)
 
-    if (yes != -1) yes = ind_c;
+    if (yes != -1) { yes = ind_c; yes |= (subc << 16); }
 
     return yes;
 }
@@ -324,7 +341,7 @@ mbedtls_pk_context       pkey;
 mbedtls_ssl_config       conf;
 mbedtls_net_context      server_ctx, client_ctx;
 
-int ret = 0, len = 0, err = 0, ictrl = -1;
+int ret = 0, len = 0, err = 0, rt, ictrl = -1, sctrl = -1;
 uint8_t auth = 0, eot = 0;
 uint32_t timeout = timeout_auth;
 time_t cur_time = 0;
@@ -490,9 +507,11 @@ float tChip = get_tChip();
                 print_msg(1, TAGTLS, "Recv. data (%d bytes) from client : %s\n", rtr, buf);
                 eot = 0;
                 //-----------------     Check ctrl's    ------------------------------------
-                ictrl = parser_json_str(buf, &auth, hash_str, &eot);
+                rt = parser_json_str(buf, &auth, hash_str, &eot);
+                ictrl = rt & 0xffff;//command
+                sctrl = rt >> 16;//sub_command for 'get' command
                 if (auth) {
-                    if (ictrl == CTRL_AUTH) {
+                    if (ictrl == iCTRL_AUTH) {
                         print_msg(1, TAGTLS, "For client %s access granted !\n", tls_cli_ip_addr);
 #ifdef UDP_SEND_BCAST
                         if (udp_start) udp_flag = 0;
@@ -535,12 +554,66 @@ float tChip = get_tChip();
                     tChip = get_tChip();
                     //
                     //vTaskDelay(100 / portTICK_RATE_MS);
-                    len = sprintf(tbuf, "{\"DevID\":\"%08X\",\"Time\":%u,\"FreeMem\":%u,\"cli\":\"%s\",\"Vcc\":%.3f,\"Temp\":%.2f}\r\n",
-                                        cli_id, (uint32_t)time(NULL), xPortGetFreeHeapSize(), tls_cli_ip_addr, vcc, tChip);
+                    if (ictrl != iCTRL_GET) {
+                        len = sprintf(tbuf, "{\"DevID\":\"%08X\",\"Time\":%u,\"FreeMem\":%u,\"Vcc\":%.3f,\"Temp\":%.2f}\r\n",
+                                        cli_id, (uint32_t)time(NULL), xPortGetFreeHeapSize(), vcc, tChip);
+                    } else {
+                        sprintf(tbuf, "{\"DevID\":\"%08X\",\"Time\":%u,\"FreeMem\":%u,\"Vcc\":%.3f,\"Temp\":%.2f",
+                                        cli_id, (uint32_t)time(NULL), xPortGetFreeHeapSize(), vcc, tChip);
+                        switch (sctrl) {
+                            //case sCTRL_STATUS://"status",
+                            case sCTRL_WIFI://"wifi",     //{"wifi":"ssid:password"}
+                                memset(ts, 0, sizeof(ts));
+                                if (read_param(PARAM_SSID_NAME, (void *)ts, wifi_param_len) != ESP_OK) strcpy(ts, "???");
+                                sprintf(tbuf+strlen(tbuf), ",\"wifi\":\"%s", ts);
+                                memset(ts, 0, sizeof(ts));
+                                if (read_param(PARAM_KEY_NAME, (void *)ts, wifi_param_len) != ESP_OK) strcpy(ts, "???");
+                                sprintf(tbuf+strlen(tbuf), ":%s\"", ts);
+                            break;
+#ifdef SET_SNTP
+                            case sCTRL_SNTP_SRV://"sntp_srv", //{"sntp_srv":"2.ru.pool.ntp.org"}
+                                memset(ts, 0, sizeof(ts));
+                                if (read_param(PARAM_SNTP_NAME, (void *)ts, sntp_srv_len) != ESP_OK) strcpy(ts, "???");
+                                sprintf(tbuf+strlen(tbuf), ",\"sntp_srv\":\"%s\"", ts);
+                            break;
+                            case sCTRL_TIME_ZONE://"time_zone",//{"time_zone":"UTC+02:00"}
+                                if (read_param(PARAM_TZONE_NAME, (void *)ts, sntp_srv_len) != ESP_OK) strcpy(ts, "???");
+                                sprintf(tbuf+strlen(tbuf), ",\"time_zone\":\"%s\"", ts);
+                            break;
+#endif
+#ifdef SET_FTP_CLI
+                            case sCTRL_FTP_SRV://"ftp_srv",  //{"ftp_srv":"192.168.0.201:21"}
+                                memset(ts, 0, sizeof(ts));
+                                if (read_param(PARAM_FTP_SRV_ADDR_NAME, (void *)ts, sizeof(ftp_srv_addr)) != ESP_OK) strcpy(ts, "???");
+                                sprintf(tbuf+strlen(tbuf), ",\"ftp_srv\":\"%s", ts);
+                                uint16_t prt = 0;
+                                if (read_param(PARAM_FTP_SRV_PORT_NAME, (void *)&prt, sizeof(uint16_t)) != ESP_OK) prt = 0;
+                                sprintf(tbuf+strlen(tbuf), ":%u\"", prt);
+                            break;
+                            case sCTRL_FTP_USER://"ftp_user", //{"ftp_user":"login:password"}
+                                memset(ts, 0, sizeof(ts));
+                                if (read_param(PARAM_FTP_SRV_LOGIN_NAME, (void *)ts, sizeof(ftp_srv_login)) != ESP_OK) strcpy(ts, "???");
+                                sprintf(tbuf+strlen(tbuf), ",\"ftp_user\":\"%s", ts);
+                                memset(ts, 0, sizeof(ts));
+                                if (read_param(PARAM_FTP_SRV_PASSWD_NAME, (void *)ts, sizeof(ftp_srv_passwd)) != ESP_OK) strcpy(ts, "???");
+                                sprintf(tbuf+strlen(tbuf), ":%s\"", ts);
+                            break;
+#endif
+#ifdef SET_NET_LOG
+                            case sCTRL_LOG_PORT://"log_port", //{"log_port":"8008"}
+                                sprintf(tbuf+strlen(tbuf), ",\"log_port\":\%u", net_log_port);
+                            break;
+#endif
+                            case sCTRL_VERSION://"version"   //{"version":"4.2 (22.01.2020)"}
+                                sprintf(tbuf+strlen(tbuf), ",\"version\":\"%s\"", Version);
+                            break;
+                        }
+                        strcat(tbuf, "}\r\n");
+                        len = strlen(tbuf);
+                    }
                 } else len = sprintf(tbuf, "{\"status\":\"You are NOT auth. client, bye\"}\r\n");
 
                 if (ictrl != -1) {
-                    ictrl = -1;
                     while ((ret = mbedtls_ssl_write(&ssl, (unsigned char *)tbuf, len)) <= 0) {
                         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
                             ESP_LOGE(TAGTLS," failed ! mbedtls_ssl_write returned %d", ret);
@@ -549,6 +622,7 @@ float tChip = get_tChip();
                         }
                     }
                     print_msg(1, TAGTLS, "%s", tbuf);
+                    ictrl = sctrl = -1;
                 }
                 if (!auth || eot) break;
                 vTaskDelay(10 / portTICK_RATE_MS);
