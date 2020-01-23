@@ -30,7 +30,7 @@ const char *CtrlName[] = {
 const char *l_on  = "on";
 const char *l_off = "off";
 
-#define sub_cmd_name_all 8
+#define sub_cmd_name_all 9
 const char *SubCtrlName[] = {
     "status",
     "wifi",     //{"wifi":"ssid:password"}
@@ -39,7 +39,8 @@ const char *SubCtrlName[] = {
     "ftp_srv",  //{"ftp_srv":"192.168.0.201:21"}
     "ftp_user", //{"ftp_user":"login:password"}
     "log_port", //{"log_port":"8008"}
-    "version"   //{"version":"4.2 (22.01.2020)"}
+    "version",  //{"version":"4.2 (22.01.2020)"}
+    "gps_srv"   //{"gps_srv":"192.168.0.201:9090"}
 };
 //------------------------------------------------------------------------------------------
 char *get_json_str(cJSON *tp)
@@ -607,6 +608,11 @@ float tChip = get_tChip();
                             case sCTRL_VERSION://"version"   //{"version":"4.2 (22.01.2020)"}
                                 sprintf(tbuf+strlen(tbuf), ",\"version\":\"%s\"", Version);
                             break;
+#ifdef SET_FMB630
+                            case sCTRL_GPS_SRV://"gps_srv",  //{"gps_srv":"192.168.0.201:9090"}
+                                sprintf(tbuf+strlen(tbuf), ",\"gps_srv\":\"%s:%u\"", gps_ini.srv, gps_ini.port);
+                            break;
+#endif
                         }
                         strcat(tbuf, "}\r\n");
                         len = strlen(tbuf);

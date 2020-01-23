@@ -98,18 +98,15 @@ static bool scr_ini_done = false;
 #endif
 
 #ifdef SET_FMB630
+    s_conf gps_ini;
     uint8_t emul_start = 0;
     xSemaphoreHandle rec_mutex;
     xSemaphoreHandle mirror_mutex;
-    xSemaphoreHandle conf_mutex;
 #endif
 //***************************************************************************************************************
 
 esp_err_t read_param(char *param_name, void *param_data, size_t len);
 esp_err_t save_param(char *param_name, void *param_data, size_t len);
-
-//int save_rec_log(char *, int);
-//int read_rec_log(char *, uint32_t *);
 
 //***************************************************************************************************************
 
@@ -853,7 +850,6 @@ void app_main()
     rec_mutex    = xSemaphoreCreateMutex();
     mirror_mutex = xSemaphoreCreateMutex();
 
-    s_conf gps_ini;
     memset(&gps_ini, 0, sizeof(s_conf));
     //
     int cfgErr = 1;
@@ -885,10 +881,9 @@ void app_main()
         gps_ini.snd_move = 10;//int snd_move;//"period_move="//10
         gps_ini.wait_ack = 15;//int wait_ack;//"wait_ack="//15
         gps_ini.wait_before_new_connect = 10;//int wait_before_new_connect;//"wait_before_new_connect=",//3
-        //    0x209A9758,//0x0342A682,//North Latitude: 54.699650
-        //    0x0C3A4548,//0x013904D0,//East Longitude: 20.514000
-        float latf = 54.699680;
-        float lonf = 20.514002;
+        //Москва Строгино
+        float latf = 55.803893;//54.699680;
+        float lonf = 37.403016;//20.514002;
         gps_ini.latitude = latf * 10000000;//0x0342A682;//uint32_t latitude;// широта
         gps_ini.longitude = lonf * 10000000;//0x013904D0;//uint32_t longitude;// долгота
     }

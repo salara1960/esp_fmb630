@@ -1247,8 +1247,9 @@ uint32_t stop_ses  = start_ses;
             gpio_set_level(GPIO_GPS_PIN, LED_ON);
             print_msg(1, TAGGPS, "Connect to %s:%d OK\n", line, tcp_port);
 #ifdef SET_SSD1306
-            i = sprintf(screen, "Send packets :\n");
-            ssd1306_text_xy(screen, ssd1306_calcx(i), 5);
+            memset(screen, 0, sizeof(screen));
+            strncpy(screen, line, 16);
+            ssd1306_text_xy(screen, ssd1306_calcx(strlen(screen)), 5);
 #endif
         }
         fcntl(connsocket, F_SETFL, (fcntl(connsocket, F_GETFL)) | O_NONBLOCK);

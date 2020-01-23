@@ -283,6 +283,7 @@ extern esp_err_t save_param(char *param_name, void *param_data, size_t len);
 #ifdef SET_FMB630
     #include "fmb630.h"
 
+    extern s_conf gps_ini;
     extern uint8_t emul_start;
     extern xSemaphoreHandle rec_mutex;
     extern xSemaphoreHandle mirror_mutex;
