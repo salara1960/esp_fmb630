@@ -608,7 +608,7 @@ float tChip = get_tChip();
 #endif
 #ifdef SET_NET_LOG
                             case sCTRL_LOG_PORT://"log_port", //{"log_port":"8008"}
-                                sprintf(tbuf+strlen(tbuf), ",\"log_port\":\%u", net_log_port);
+                                sprintf(tbuf+strlen(tbuf), ",\"log_port\":%u", net_log_port);
                             break;
 #endif
                             case sCTRL_VERSION://"version"   //{"version":"4.2 (22.01.2020)"}
