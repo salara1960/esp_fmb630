@@ -67,7 +67,8 @@
         sCTRL_FTP_USER,//"ftp_user", //{"ftp_user":"login:password"}
         sCTRL_LOG_PORT,//"log_port", //{"log_port":"8008"}
         sCTRL_VERSION,//"version"   //{"version":"4.2 (22.01.2020)"}
-        sCTRL_GPS_SRV//"gps_srv",  //{"gps_srv":"192.168.0.201:9090"}
+        sCTRL_GPS_SRV,//"gps_srv",  //{"gps_srv":"192.168.0.201:9090"}
+        sCTRL_GPS_INFO//"gps_info", //{"gps_info":{...}}
     } s_ctrl_t;
 
 

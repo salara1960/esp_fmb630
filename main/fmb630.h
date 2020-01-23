@@ -174,6 +174,14 @@ typedef struct {
     uint8_t total_elem;
 } s_gsm;
 typedef struct {
+    uint32_t longitude;
+    uint32_t latitude;
+    short altitude;
+    uint16_t angle;
+    uint8_t sattelites;
+    uint16_t speed;
+} s_gsm_info;
+typedef struct {
     uint8_t total_len1;
     uint8_t id_din1;
     uint8_t val_din1;//DIN1 - Ign : 1-вкл.  0-выкл.
@@ -248,6 +256,7 @@ typedef struct {
 #pragma pack(pop)
 
 extern const char *TAGGPS;
+extern s_gsm_info gsm_info;
 
 
 //**********************************************************************************************************************

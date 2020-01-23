@@ -131,6 +131,8 @@ uint8_t stop_flag = 0;
 
 s_conf conf;
 
+s_gsm_info gsm_info;
+
 //-----------------------------------------------------------------------
 
 static const char *cmds[] = {
@@ -810,6 +812,7 @@ char stz[32];
 
         if (xSemaphoreTake(mirror_mutex, portMAX_DELAY) == pdTRUE) {
             memcpy((uint8_t *)&mirror.gsm.ts, (uint8_t *)&mirs.gsm.ts, sizeof(s_mir));
+            memcpy((uint8_t *)&gsm_info.longitude, (uint8_t *)&mirs.gsm.longitude, sizeof(s_gsm_info));
             xSemaphoreGive(mirror_mutex);
         }
 
@@ -822,8 +825,8 @@ char stz[32];
 #ifdef SET_SSD1306
     //ssd1306_clear_line(3); ssd1306_clear_line(4);
     sprintf(stz, " Lati:%.6f\n Long:%.6f",
-                 (float)(ntohl(mirs.gsm.latitude)) / 10000000,
-                 (float)(ntohl(mirs.gsm.longitude)) / 10000000);
+                 (float)(ntohl(gsm_info.latitude)) / 10000000,
+                 (float)(ntohl(gsm_info.longitude)) / 10000000);
     ssd1306_text_xy(stz, 1, 3);
 #endif
 
@@ -1097,6 +1100,7 @@ uint8_t eoj = 0;
 
     if (xSemaphoreTake(mirror_mutex, portMAX_DELAY) == pdTRUE) {
         memcpy((uint8_t *)&mirror.gsm.ts, (uint8_t *)&mirs.gsm.ts, sizeof(s_mir));// put mirror struct
+        memcpy((uint8_t *)&gsm_info.longitude, (uint8_t *)&mirs.gsm.longitude, sizeof(s_gsm_info));
         xSemaphoreGive(mirror_mutex);
     }
 

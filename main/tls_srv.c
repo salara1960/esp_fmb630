@@ -24,13 +24,15 @@ const char *CtrlName[] = {
     "ftp_go",   //7//{"ftp_go":"on"}
     "ftp_srv",  //8//{"ftp_srv":"10.100.0.201:21"}
     "ftp_user", //9//{"ftp_user":"login:password"}
-    "get"       //10//{"get":"status"},{"get":"wifi"},{"get":"sntp_srv"},{"get":"time_zone"},{"get":"ftp_srv"},{"get":"ftp_user"},{"get":"log_port"},{"get":"version"}
+    "get"       //10  //{"get":"status"},{"get":"wifi"},{"get":"sntp_srv"},{"get":"time_zone"},
+                      //{"get":"ftp_srv"},{"get":"ftp_user"},{"get":"log_port"},{"get":"version"},
+                      //{"gps_srv":"192.168.0.201:9090"},//{"gps_info":{...}}
 };//9
 
 const char *l_on  = "on";
 const char *l_off = "off";
 
-#define sub_cmd_name_all 9
+#define sub_cmd_name_all 10
 const char *SubCtrlName[] = {
     "status",
     "wifi",     //{"wifi":"ssid:password"}
@@ -40,7 +42,8 @@ const char *SubCtrlName[] = {
     "ftp_user", //{"ftp_user":"login:password"}
     "log_port", //{"log_port":"8008"}
     "version",  //{"version":"4.2 (22.01.2020)"}
-    "gps_srv"   //{"gps_srv":"192.168.0.201:9090"}
+    "gps_srv",  //{"gps_srv":"192.168.0.201:9090"}
+    "gps_info"  //{"gps_info":{...}}
 };
 //------------------------------------------------------------------------------------------
 char *get_json_str(cJSON *tp)
@@ -349,6 +352,9 @@ time_t cur_time = 0;
 #ifdef SET_TIMEOUT60
     time_t wait_time = 0;
 #endif
+#ifdef SET_FMB630
+    s_gsm_info gsm = {0};
+#endif
 char *buf = NULL, *uk = NULL, *tbuf = NULL;
 char ts[64] = {0}, hash_str[256] = {0}, str_tls_port[8] = {0};
 s_tls_flags flags = {
@@ -611,6 +617,20 @@ float tChip = get_tChip();
 #ifdef SET_FMB630
                             case sCTRL_GPS_SRV://"gps_srv",  //{"gps_srv":"192.168.0.201:9090"}
                                 sprintf(tbuf+strlen(tbuf), ",\"gps_srv\":\"%s:%u\"", gps_ini.srv, gps_ini.port);
+                            break;
+                            case sCTRL_GPS_INFO://"gps_info",  //{"gps_info":{...}}
+                                if (xSemaphoreTake(mirror_mutex, portMAX_DELAY) == pdTRUE) {
+                                    memcpy((uint8_t *)&gsm, (uint8_t *)&gsm_info, sizeof(s_gsm_info));
+                                    xSemaphoreGive(mirror_mutex);
+                                }
+                                sprintf(tbuf+strlen(tbuf), ",\"gps_info\":{\"lat\":%.6f,\"long\":%.6f,"
+                                                           "\"alt\":%d,\"angle\":%u,\"sat\":%u,\"speed\":%u}",
+                                                           (float)(ntohl(gsm.latitude)) / 10000000,
+                                                           (float)(ntohl(gsm.longitude)) / 10000000,
+                                                           (short)ntohs(gsm.altitude),
+                                                           ntohs(gsm.angle),
+                                                           gsm.sattelites,
+                                                           ntohs(gsm.speed));
                             break;
 #endif
                         }

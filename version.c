@@ -40,5 +40,6 @@
 //const char *Version = "4.2 (22.01.2020)";//Minor changes in tls_server
 //const char *Version = "4.3 (22.01.2020)";//Major changes in tls_server : for ctrl_command 'get' add 8 sub_ctrl_commands
 //const char *Version = "4.4 (23.01.2020)";//Minor changes in tls_server : add sub_ctrl_command 'gps_srv'
-const char *Version = "4.5 (23.01.2020)";//Minor changes : in fmb630_client add display latitude and longitude on the ssd1306
+//const char *Version = "4.5 (23.01.2020)";//Minor changes : in fmb630_client add display latitude and longitude on the ssd1306
+const char *Version = "4.6 (23.01.2020)";//Minor changes : in tls_server add sub_ctrl_command 'gps_info'
 
