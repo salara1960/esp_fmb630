@@ -936,7 +936,7 @@ void app_main()
         ESP_LOGE(TAGTLS, "Create tls_task failed | FreeMem %u", xPortGetFreeHeapSize());
     }
     vTaskDelay(500 / portTICK_RATE_MS);
-    static uint8_t screen = 0;
+//    static uint8_t screen = 0;
 #endif
 
 /**/
@@ -959,6 +959,7 @@ void app_main()
                     if ((tn > 0) && (tn < 8)) sprintf(stk+strlen(stk),"%*.s",tn," ");
                     sprintf(stk+strlen(stk),"%s", localip);
                 }
+/*
                 strcat(stk,"\n");
 #ifdef SET_TLS_SRV
                 if (strlen(tls_cli_ip_addr)) {
@@ -974,6 +975,7 @@ void app_main()
                     }
                 }
 #endif
+*/
                 /*sprintf(stk+strlen(stk), "  GPIO_35=%u", gpio_get_level(GPIO_RESTART_PIN));*/
                 ssd1306_text_xy(stk, 2, 1);
             }

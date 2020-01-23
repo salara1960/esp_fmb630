@@ -574,7 +574,7 @@ uint16_t bit16;
 short bit15;
 float fway;
 static uint8_t cdut = 3;
-
+char stz[32];
 
     if (!pk) pk = 1; else if (pk > max_pk) pk = max_pk;//max_pk=2 -> 2 samples in packet
 
@@ -818,6 +818,14 @@ static uint8_t cdut = 3;
         free(tmp);
 
         last_send = (uint32_t)time(NULL);
+
+#ifdef SET_SSD1306
+    //ssd1306_clear_line(3); ssd1306_clear_line(4);
+    sprintf(stz, " Lati:%.6f\n Long:%.6f",
+                 (float)(ntohl(mirs.gsm.latitude)) / 10000000,
+                 (float)(ntohl(mirs.gsm.longitude)) / 10000000);
+    ssd1306_text_xy(stz, 1, 3);
+#endif
 
     }
 
@@ -1507,6 +1515,8 @@ out_of_job:
 
 
 #ifdef SET_SSD1306
+        ssd1306_clear_line(3);
+        ssd1306_clear_line(4);
         ssd1306_clear_line(5);
         ssd1306_clear_line(6);
 #endif

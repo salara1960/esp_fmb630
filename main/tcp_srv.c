@@ -148,12 +148,14 @@ char stx[64];
                            htons(client_addr.sin_port),
                            tcpCli,
                            xPortGetFreeHeapSize());
+#ifdef SET_SSD1306
                 ssd1306_clear_line(7);
                 dl = sprintf(stx, "LOG client adr:");
                 ssd1306_text_xy(stx, ssd1306_calcx(dl), 7);
                 ssd1306_clear_line(8);
                 dl = strlen(log_cli_ip_addr);
                 ssd1306_text_xy(log_cli_ip_addr, ssd1306_calcx(dl), 8);
+#endif
                 while (res >= 0) {
                     res = sendMsg(&tcpCli);
                     vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -163,7 +165,10 @@ char stx[64];
 
                 print_msg(1, TAGLOG, "Closed connection. Wait new tcp client... | FreeMem %u\n", xPortGetFreeHeapSize());
                 memset(log_cli_ip_addr, 0, sizeof(log_cli_ip_addr));
-                ssd1306_clear_line(7); ssd1306_clear_line(8);
+#ifdef SET_SSD1306
+                ssd1306_clear_line(7);
+                ssd1306_clear_line(8);
+#endif
             }
             vTaskDelay(1000 / portTICK_PERIOD_MS);
         }
