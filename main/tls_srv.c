@@ -623,7 +623,7 @@ float tChip = get_tChip();
                                     memcpy((uint8_t *)&gsm, (uint8_t *)&gsm_info, sizeof(s_gsm_info));
                                     xSemaphoreGive(mirror_mutex);
                                 }
-                                sprintf(tbuf+strlen(tbuf), ",\"gps_info\":{\"lat\":%.6f,\"long\":%.6f,"
+                                sprintf(tbuf+strlen(tbuf), ",\"gps_info\":{\"lat\":%.8f,\"long\":%.8f,"
                                                            "\"alt\":%d,\"angle\":%u,\"sat\":%u,\"speed\":%u}",
                                                            (float)(ntohl(gsm.latitude)) / 10000000,
                                                            (float)(ntohl(gsm.longitude)) / 10000000,

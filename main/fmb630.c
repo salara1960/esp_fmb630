@@ -824,7 +824,7 @@ char stz[32];
 
 #ifdef SET_SSD1306
     //ssd1306_clear_line(3); ssd1306_clear_line(4);
-    sprintf(stz, " Lati:%.6f\n Long:%.6f",
+    sprintf(stz, "Lati:%.8f\nLong:%.8f",
                  (float)(ntohl(gsm_info.latitude)) / 10000000,
                  (float)(ntohl(gsm_info.longitude)) / 10000000);
     ssd1306_text_xy(stz, 1, 3);
