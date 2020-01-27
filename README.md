@@ -71,7 +71,7 @@ make flash      - запись бинарного кода проекта в dat
 - {"time_zone":"UTC+02:00"}
 - {"restart":"on"}
 - {"time":"1493714647"} , {"time":1493714647}
-- {"ftp_go":"on"}
+- {"ftp_go":"flash"},{"ftp_go":"card"}
 - {"ftp_srv":"10.100.0.201:21"}
 - {"ftp_user":"user:password"}
 - {"get":"status"},{"get":"wifi"},{"get":"sntp_srv"},{"get":"time_zone"},{"get":"ftp_srv"},{"get":"ftp_user"},{"get":"log_port"},{"get":"version"},{"gps_srv":"192.168.0.201:9090"},{"gps_info":{...}}

@@ -1165,7 +1165,10 @@ void ftp_cli_task(void *arg)
 ftp_start = 1;
 total_task++;
 s_ftp_var fvar;
+s_ftp_var *var = &fvar;
 int ret = 0;
+NetBuf_t *ftpBuf = NULL;
+
 
     getFileOK = ret;
 
@@ -1173,16 +1176,14 @@ int ret = 0;
 
     xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
 
-    print_msg(1, TAGFTP, "Start ftp_client task | FreeMem %u\n", xPortGetFreeHeapSize());
+    print_msg(1, TAGFTP, "Start ftp_client task (for %s/%s) | FreeMem %u\n", var->devPath, var->devConf, xPortGetFreeHeapSize());
 
-    s_ftp_var *var = &fvar;
-    NetBuf_t *ftpBuf = NULL;
     FtpClient *ftpClient = getFtpClient();
     if (ftpClient->ftpClientConnect(var->devSrv, var->devPort, &ftpBuf)) {
         if (ftpClient->ftpClientLogin(var->devLogin, var->devPasswd, ftpBuf)) {
             if (var->devMnt == ESP_OK) {//diskOK
                 char line[128];
-                sprintf(line, "%s/%s", var->devPath, var->devConf);//"/spiflash/conf.txt"
+                sprintf(line, "%s/%s", var->devPath, var->devConf);//"/spiflash/conf.txt" or "/sdcard/conf.txt"
                 ret = ftpClient->ftpClientGet(line, var->devConf, FTP_CLIENT_TEXT, ftpBuf);
             }
         }

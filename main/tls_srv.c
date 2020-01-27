@@ -21,16 +21,21 @@ const char *CtrlName[] = {
     "time_zone",//4//{"time_zone":"UTC+02:00"}
     "restart",  //5//{"restart":"on"}
     "time",     //6//{"time":"1579692184"} , {"time":1579692184}
-    "ftp_go",   //7//{"ftp_go":"on"}
+    "ftp_go",   //7//{"ftp_go":"flash"},{"ftp_go":"card"}
     "ftp_srv",  //8//{"ftp_srv":"10.100.0.201:21"}
     "ftp_user", //9//{"ftp_user":"login:password"}
     "get"       //10  //{"get":"status"},{"get":"wifi"},{"get":"sntp_srv"},{"get":"time_zone"},
                       //{"get":"ftp_srv"},{"get":"ftp_user"},{"get":"log_port"},{"get":"version"},
                       //{"gps_srv":"192.168.0.201:9090"},//{"gps_info":{...}}
-};//9
+};
 
-const char *l_on  = "on";
-const char *l_off = "off";
+const char *itNone  = "???";
+const char *itOn  = "on";
+const char *itOff = "off";
+const char *itFlash = "flash";
+const char *itCard  = "card";
+
+const char *endOJ  = "}\r\n";
 
 #define sub_cmd_name_all 10
 const char *SubCtrlName[] = {
@@ -107,10 +112,10 @@ char *uki = NULL;
                             if (val) {
                                 if (au) {//from tls_client
                                     if (*au) {
-                                        if (!strcmp(val, l_on)) {
+                                        if (!strcmp(val, itOn)) {
                                             udp_flag = 1;
                                             yes = 0;
-                                        } else if (!strcmp(val, l_off)) {
+                                        } else if (!strcmp(val, itOff)) {
                                             udp_flag = 0;
                                             yes = 0;
                                         }
@@ -125,7 +130,7 @@ char *uki = NULL;
                             if (val) {
                                 if (au) {//from tls_client
                                     if (*au) {
-                                        if (!strcmp(val, l_on)) {
+                                        if (!strcmp(val, itOn)) {
                                             sntp_go = 1;
                                             yes = 0;
                                         }
@@ -173,7 +178,7 @@ char *uki = NULL;
                             if (val) {
                                 if (au) {//from tls_client
                                     if (*au) {
-                                        if (!strcmp(val, l_on)) {
+                                        if (!strcmp(val, itOn)) {
                                             rcpu = 1;
                                             yes = 0;
                                         }
@@ -197,11 +202,13 @@ char *uki = NULL;
                             done = 1;
                         break;
 #ifdef SET_FTP_CLI
-                        case iCTRL_FTP_GO://7://{"ftp_go":"on"}
+                        case iCTRL_FTP_GO://7://{"ftp_go":"flash"},{"ftp_go":"card"}
                             if (val) {
                                 if (au) {
                                     if (*au) {
-                                        if (!strcmp(val, l_on)) { ftp_go_flag = 1; yes = 0; }
+                                        if (!strcmp(val, itFlash)) { to_sd = false; ftp_go_flag = 1; yes = 0; }
+                                        else
+                                        if (!strcmp(val, itCard)) { to_sd = true; ftp_go_flag = 1; yes = 0; }
                                     }
                                 }
                                 done = 1;
@@ -560,7 +567,6 @@ float tChip = get_tChip();
                     vcc = (float)get_vcc(); vcc /= 1000;
                     tChip = get_tChip();
                     //
-                    //vTaskDelay(100 / portTICK_RATE_MS);
                     if (ictrl != iCTRL_GET) {
                         len = sprintf(tbuf, "{\"DevID\":\"%08X\",\"Time\":%u,\"FreeMem\":%u,\"Vcc\":%.3f,\"Temp\":%.2f}\r\n",
                                         cli_id, (uint32_t)time(NULL), xPortGetFreeHeapSize(), vcc, tChip);
@@ -571,60 +577,61 @@ float tChip = get_tChip();
                             //case sCTRL_STATUS://"status",
                             case sCTRL_WIFI://"wifi",     //{"wifi":"ssid:password"}
                                 memset(ts, 0, sizeof(ts));
-                                if (read_param(PARAM_SSID_NAME, (void *)ts, wifi_param_len) != ESP_OK) strcpy(ts, "???");
-                                sprintf(tbuf+strlen(tbuf), ",\"wifi\":\"%s", ts);
+                                if (read_param(PARAM_SSID_NAME, (void *)ts, wifi_param_len) != ESP_OK) strcpy(ts, itNone);
+                                sprintf(tbuf+strlen(tbuf), ",\"%s\":\"%s", SubCtrlName[sctrl], ts);
                                 memset(ts, 0, sizeof(ts));
-                                if (read_param(PARAM_KEY_NAME, (void *)ts, wifi_param_len) != ESP_OK) strcpy(ts, "???");
+                                if (read_param(PARAM_KEY_NAME, (void *)ts, wifi_param_len) != ESP_OK) strcpy(ts, itNone);
                                 sprintf(tbuf+strlen(tbuf), ":%s\"", ts);
                             break;
 #ifdef SET_SNTP
                             case sCTRL_SNTP_SRV://"sntp_srv", //{"sntp_srv":"2.ru.pool.ntp.org"}
                                 memset(ts, 0, sizeof(ts));
-                                if (read_param(PARAM_SNTP_NAME, (void *)ts, sntp_srv_len) != ESP_OK) strcpy(ts, "???");
-                                sprintf(tbuf+strlen(tbuf), ",\"sntp_srv\":\"%s\"", ts);
+                                if (read_param(PARAM_SNTP_NAME, (void *)ts, sntp_srv_len) != ESP_OK) strcpy(ts, itNone);
+                                sprintf(tbuf+strlen(tbuf), ",\"%s\":\"%s\"", SubCtrlName[sctrl], ts);
                             break;
                             case sCTRL_TIME_ZONE://"time_zone",//{"time_zone":"UTC+02:00"}
-                                if (read_param(PARAM_TZONE_NAME, (void *)ts, sntp_srv_len) != ESP_OK) strcpy(ts, "???");
-                                sprintf(tbuf+strlen(tbuf), ",\"time_zone\":\"%s\"", ts);
+                                if (read_param(PARAM_TZONE_NAME, (void *)ts, sntp_srv_len) != ESP_OK) strcpy(ts, itNone);
+                                sprintf(tbuf+strlen(tbuf), ",\"%s\":\"%s\"", SubCtrlName[sctrl], ts);
                             break;
 #endif
 #ifdef SET_FTP_CLI
                             case sCTRL_FTP_SRV://"ftp_srv",  //{"ftp_srv":"192.168.0.201:21"}
                                 memset(ts, 0, sizeof(ts));
-                                if (read_param(PARAM_FTP_SRV_ADDR_NAME, (void *)ts, sizeof(ftp_srv_addr)) != ESP_OK) strcpy(ts, "???");
-                                sprintf(tbuf+strlen(tbuf), ",\"ftp_srv\":\"%s", ts);
+                                if (read_param(PARAM_FTP_SRV_ADDR_NAME, (void *)ts, sizeof(ftp_srv_addr)) != ESP_OK) strcpy(ts, itNone);
+                                sprintf(tbuf+strlen(tbuf), ",\"%s\":\"%s", SubCtrlName[sctrl], ts);
                                 uint16_t prt = 0;
                                 if (read_param(PARAM_FTP_SRV_PORT_NAME, (void *)&prt, sizeof(uint16_t)) != ESP_OK) prt = 0;
                                 sprintf(tbuf+strlen(tbuf), ":%u\"", prt);
                             break;
                             case sCTRL_FTP_USER://"ftp_user", //{"ftp_user":"login:password"}
                                 memset(ts, 0, sizeof(ts));
-                                if (read_param(PARAM_FTP_SRV_LOGIN_NAME, (void *)ts, sizeof(ftp_srv_login)) != ESP_OK) strcpy(ts, "???");
-                                sprintf(tbuf+strlen(tbuf), ",\"ftp_user\":\"%s", ts);
+                                if (read_param(PARAM_FTP_SRV_LOGIN_NAME, (void *)ts, sizeof(ftp_srv_login)) != ESP_OK) strcpy(ts, itNone);
+                                sprintf(tbuf+strlen(tbuf), ",\"%s\":\"%s", SubCtrlName[sctrl], ts);
                                 memset(ts, 0, sizeof(ts));
-                                if (read_param(PARAM_FTP_SRV_PASSWD_NAME, (void *)ts, sizeof(ftp_srv_passwd)) != ESP_OK) strcpy(ts, "???");
+                                if (read_param(PARAM_FTP_SRV_PASSWD_NAME, (void *)ts, sizeof(ftp_srv_passwd)) != ESP_OK) strcpy(ts, itNone);
                                 sprintf(tbuf+strlen(tbuf), ":%s\"", ts);
                             break;
 #endif
 #ifdef SET_NET_LOG
                             case sCTRL_LOG_PORT://"log_port", //{"log_port":"8008"}
-                                sprintf(tbuf+strlen(tbuf), ",\"log_port\":%u", net_log_port);
+                                sprintf(tbuf+strlen(tbuf), ",\"%s\":%u", SubCtrlName[sctrl], net_log_port);
                             break;
 #endif
                             case sCTRL_VERSION://"version"   //{"version":"4.2 (22.01.2020)"}
-                                sprintf(tbuf+strlen(tbuf), ",\"version\":\"%s\"", Version);
+                                sprintf(tbuf+strlen(tbuf), ",\"%s\":\"%s\"", SubCtrlName[sctrl], Version);
                             break;
 #ifdef SET_FMB630
                             case sCTRL_GPS_SRV://"gps_srv",  //{"gps_srv":"192.168.0.201:9090"}
-                                sprintf(tbuf+strlen(tbuf), ",\"gps_srv\":\"%s:%u\"", gps_ini.srv, gps_ini.port);
+                                sprintf(tbuf+strlen(tbuf), ",\"%s\":\"%s:%u\"", SubCtrlName[sctrl], gps_ini.srv, gps_ini.port);
                             break;
                             case sCTRL_GPS_INFO://"gps_info",  //{"gps_info":{...}}
                                 if (xSemaphoreTake(mirror_mutex, portMAX_DELAY) == pdTRUE) {
                                     memcpy((uint8_t *)&gsm, (uint8_t *)&gsm_info, sizeof(s_gsm_info));
                                     xSemaphoreGive(mirror_mutex);
                                 }
-                                sprintf(tbuf+strlen(tbuf), ",\"gps_info\":{\"lat\":%.8f,\"long\":%.8f,"
+                                sprintf(tbuf+strlen(tbuf), ",\"%s\":{\"lat\":%.8f,\"long\":%.8f,"
                                                            "\"alt\":%d,\"angle\":%u,\"sat\":%u,\"speed\":%u}",
+                                                           SubCtrlName[sctrl], 
                                                            (float)(ntohl(gsm.latitude)) / 10000000,
                                                            (float)(ntohl(gsm.longitude)) / 10000000,
                                                            (short)ntohs(gsm.altitude),
@@ -634,7 +641,7 @@ float tChip = get_tChip();
                             break;
 #endif
                         }
-                        strcat(tbuf, "}\r\n");
+                        strcat(tbuf, endOJ);
                         len = strlen(tbuf);
                     }
                 } else len = sprintf(tbuf, "{\"status\":\"You are NOT auth. client, bye\"}\r\n");

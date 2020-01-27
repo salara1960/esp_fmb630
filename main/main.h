@@ -296,6 +296,7 @@ extern esp_err_t save_param(char *param_name, void *param_data, size_t len);
     extern uint16_t ftp_srv_port;
     extern char ftp_srv_login[ftp_pole_len];
     extern char ftp_srv_passwd[ftp_pole_len];
+    extern bool to_sd;
 #endif
 
 

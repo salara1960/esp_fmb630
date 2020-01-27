@@ -1166,7 +1166,6 @@ char scmd[256], line[256] = {0};
 uint16_t tcp_port;
 struct sockaddr_in srv_conn;
 socklen_t srvlen;
-//struct hostent *hostPtr = NULL;
 int connsocket = -1, i = 0, j, ik, lenr = 0, lenr_tmp = 0, ind = 0, lenr_wait = 4, body_len = 0, lens = 0, icmd = -1;
 size_t resa;
 uint32_t cnt_send = 0;
@@ -1191,9 +1190,10 @@ uint32_t start_ses = get_tmr(0)/_1s;
 uint32_t stop_ses  = start_ses;
 
 
-    ets_printf("[%s] Start fmb630 task | FreeMem %u\n", TAGGPS, xPortGetFreeHeapSize());
 
     xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
+
+    print_msg(1, TAGGPS, "Start fmb630_client task | FreeMem %u\n", xPortGetFreeHeapSize());
 
 
     to_server   = (uint8_t *)calloc(1, buf_size);   if (!to_server)   goto done;
@@ -1218,7 +1218,7 @@ uint32_t stop_ses  = start_ses;
     if (cfg.latitude) { first_lat = &cfg.latitude; flat = cfg.latitude; flat /= 10000000; }
     if (cfg.longitude) { first_lon = &cfg.longitude; flon = cfg.longitude; flon /= 10000000; }
 
-    sprintf(chap, "START FMB630 :\n\tsrv=%s:%u\n\timei=%s\n"
+    sprintf(chap, "FMB630 :\n\tsrv=%s:%u\n\timei=%s\n"
                   "\tmode=%u\n\tsend_period=%u/%u\n\twait_ack=%u\n"
                   "\twait_before_new_connect=%u\n\tlocation=%f,%f\n",
                   line, tcp_port, im, work_mode, sp_park/_1s, sp_move/_1s, wait_ack_sec/_1s, wait_before_new_connect/_1s, flat, flon);
@@ -1502,10 +1502,10 @@ uint32_t stop_ses  = start_ses;
 
         if (err) {
             sprintf(chap,"Error code 0x%02X :\n", err);
-            if (err&1) sprintf(chap+strlen(chap),"\tSend imei to server error.\n");
-            if (err&2) sprintf(chap+strlen(chap),"\tServer closed connection without answer.\n");
-            if (err&4) sprintf(chap+strlen(chap),"\tServer reject connection (imei unknown).\n");
-            if (err&8) sprintf(chap+strlen(chap),"\tTimeout recv. data from server.\n");
+            if (err&1)    sprintf(chap+strlen(chap),"\tSend imei to server error.\n");
+            if (err&2)    sprintf(chap+strlen(chap),"\tServer closed connection without answer.\n");
+            if (err&4)    sprintf(chap+strlen(chap),"\tServer reject connection (imei unknown).\n");
+            if (err&8)    sprintf(chap+strlen(chap),"\tTimeout recv. data from server.\n");
             if (err&0x10) sprintf(chap+strlen(chap),"\tInternal error.\n");
             if (err&0x20) sprintf(chap+strlen(chap),"\tSend packet to server error.\n");
             if (err&0x40) sprintf(chap+strlen(chap),"\tCPU reset now !\n");
@@ -1544,10 +1544,8 @@ out_of_job:
 
     del_all_ones(1);
 
-    print_msg(1, NULL, "fmb630_task stop, srv=%s:%d imei=%s mode=%u\n========================================\n",
+    print_msg(1, NULL, "fmb630_client task stop, srv=%s:%d imei=%s mode=%u\n========================================\n",
                  line, tcp_port, im, work_mode);
-
-//    if (fd_log > 0) close(fd_log);
 
 
 done:

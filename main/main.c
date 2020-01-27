@@ -65,6 +65,7 @@ uint32_t tls_client_ip = 0;
     uint16_t ftp_srv_port;
     char ftp_srv_login[ftp_pole_len] = {0};
     char ftp_srv_passwd[ftp_pole_len] = {0};
+    bool to_sd = false;
 #endif
 
 #ifdef UDP_SEND_BCAST
@@ -779,7 +780,7 @@ void app_main()
 
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
-        .max_files = 5,
+        .max_files = 3,
         .allocation_unit_size = 8 * 1024 //16 * 1024
     };
 
@@ -787,9 +788,10 @@ void app_main()
     mntOK = esp_vfs_fat_sdmmc_mount(sdPath, &host, &slot_config, &mount_config, &card);
 
     if (mntOK != ESP_OK) {
-        if (mntOK == ESP_FAIL) print_msg(1, TAGFAT, "Failed to mount filesystem on sdcard.\n");
-                          else print_msg(1, TAGFAT, "Failed to initialize the sdcard\n");
-    } else print_msg(1, TAGFAT, "Mount %s OK | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
+        if (mntOK == ESP_FAIL) sprintf(line, "Failed to mount filesystem on sdcard.\n");
+                          else sprintf(line, "Failed to initialize the sdcard\n");
+    } else sprintf(line, "Mount %s OK | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
+    print_msg(1, TAGFAT, line);
 
     if (mntOK == ESP_OK) {
         sdmmc_card_print_info(stdout, card);
@@ -809,7 +811,7 @@ void app_main()
     vTaskDelay(1000 / portTICK_RATE_MS);
 
     const esp_vfs_fat_mount_config_t mount_disk = {
-        .max_files = 5,
+        .max_files = 3,
         .format_if_mount_failed = false
     };
 
@@ -854,22 +856,19 @@ void app_main()
     //
     int cfgErr = 1;
 
-    if (diskOK == ESP_OK) {
-        sprintf(line, "%s/%s", diskPath, sdConf);
-        cfgErr = read_cfg(&gps_ini, line, 0);
 
-//        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
-//        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
-//        diskOK = ESP_FAIL;
+    if (mntOK == ESP_OK) {
+        sprintf(line, "%s/%s", sdPath, sdConf);
+        cfgErr = read_cfg(&gps_ini, line, 0);
+        //
+        esp_vfs_fat_sdmmc_unmount();
+        print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
+        mntOK = ESP_FAIL;
     }
     if (cfgErr) {
-        if (mntOK == ESP_OK) {
-            sprintf(line, "%s/%s", sdPath, sdConf);
+        if (diskOK == ESP_OK) {
+            sprintf(line, "%s/%s", diskPath, sdConf);
             cfgErr = read_cfg(&gps_ini, line, 0);
-
-//            esp_vfs_fat_sdmmc_unmount();
-//            print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
-//            mntOK = ESP_FAIL;
         }
     }
     if (cfgErr) {
@@ -894,40 +893,24 @@ void app_main()
     vTaskDelay(1000 / portTICK_RATE_MS);
 #endif
 
-/*
-#ifdef SET_FATDISK
-    if (diskOK == ESP_OK) {
-        esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
-        print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
-        diskOK = ESP_FAIL;
-    }
-#endif
-*/
-#ifdef SET_SDCARD
-    if (mntOK == ESP_OK) {
-        esp_vfs_fat_sdmmc_unmount();
-        print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
-        mntOK = ESP_FAIL;
-    }
-#endif
-
 
 #ifdef SET_FTP_CLI
     uint8_t mdone = 0;
     s_ftp_var farg;
     memset((uint8_t *)&farg, 0, sizeof(s_ftp_var));
-    farg.devMnt = diskOK;
     farg.devPort = ftp_srv_port;//FTP_SRV_PORT_DEF;
     strcpy(farg.devSrv, ftp_srv_addr);//FTP_SRV_ADDR_DEF);
     strcpy(farg.devLogin, ftp_srv_login);//FTP_SRV_LOGIN_DEF);
     strcpy(farg.devPasswd, ftp_srv_passwd);//FTP_SRV_PASSWD_DEF);
-    strcpy(farg.devPath, FTP_PATH_DEF);
-    strcpy(farg.devConf, FTP_CONF_DEF);
-    if (xTaskCreatePinnedToCore(&ftp_cli_task, "ftp_cli_task", 8*STACK_SIZE_1K, &farg, 8, NULL, 1) != pdPASS) {
-        ESP_LOGE(TAGGPS, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
+    strcpy(farg.devConf, sdConf);
+    if (to_sd) {
+        farg.devMnt = mntOK;
+        strcpy(farg.devPath, sdPath);
+    } else {
+        farg.devMnt = diskOK;
+        strcpy(farg.devPath, diskPath);
     }
-    vTaskDelay(1000 / portTICK_RATE_MS);
-
+    print_msg(1, TAGFTP, "Init FTP struct for '%s/%s' doe | FreeMem %u\n", farg.devPath, farg.devConf,  xPortGetFreeHeapSize());
 #endif
 
 
@@ -936,12 +919,13 @@ void app_main()
         ESP_LOGE(TAGTLS, "Create tls_task failed | FreeMem %u", xPortGetFreeHeapSize());
     }
     vTaskDelay(500 / portTICK_RATE_MS);
-//    static uint8_t screen = 0;
 #endif
+
 
 /**/
     check_pin(GPIO_RESTART_PIN);
 /**/
+
 
     while (!restart_flag) {//main loop
 
@@ -959,24 +943,6 @@ void app_main()
                     if ((tn > 0) && (tn < 8)) sprintf(stk+strlen(stk),"%*.s",tn," ");
                     sprintf(stk+strlen(stk),"%s", localip);
                 }
-/*
-                strcat(stk,"\n");
-#ifdef SET_TLS_SRV
-                if (strlen(tls_cli_ip_addr)) {
-                    sprintf(stk+strlen(stk), "TLS client adr:\n %s", tls_cli_ip_addr);
-                    screen = 1;
-                } else {
-                    if (screen) {
-                        screen = 0;
-                        for (tu = 0; tu < 16; tu++) sprintf(stk+strlen(stk), " ");
-                        strcat(stk,"\n");
-                        for (tu = 0; tu < 16; tu++) sprintf(stk+strlen(stk), " ");
-                        strcat(stk,"\n");
-                    }
-                }
-#endif
-*/
-                /*sprintf(stk+strlen(stk), "  GPIO_35=%u", gpio_get_level(GPIO_RESTART_PIN));*/
                 ssd1306_text_xy(stk, 2, 1);
             }
             adc_tw = get_tmr(_1s);
@@ -1009,23 +975,37 @@ void app_main()
 #ifdef SET_FTP_CLI
         if (!mdone) {
             if (!ftp_start) {
+#ifdef SET_SDCARD
+                if (mntOK == ESP_OK) {
+                    esp_vfs_fat_sdmmc_unmount();
+                    print_msg(1, TAGFAT, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", sdPath, xPortGetFreeHeapSize());
+                    mntOK = ESP_FAIL;
+                }
+#endif
 #ifdef SET_FATDISK
                 if (diskOK == ESP_OK) {
-                esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
-                print_msg(1, TAGFATD, "Unmounted FAT filesystem partition '%s' | FreeMem %u\n", diskPart, xPortGetFreeHeapSize());
-                diskOK = ESP_FAIL;
-            }
+                    esp_vfs_fat_spiflash_unmount(diskPath, s_wl_handle);
+                    print_msg(1, TAGFATD, "Unmounted FAT filesystem on '%s' | FreeMem %u\n", diskPath, xPortGetFreeHeapSize());
+                    diskOK = ESP_FAIL;
+                }
 #endif
             }
         }
         if (ftp_go_flag) {
             if (!ftp_start) {
                 ftp_go_flag = 0;
-                if (diskOK != ESP_OK) diskOK = esp_vfs_fat_spiflash_mount(diskPath, diskPart, &mount_disk, &s_wl_handle);
-                if (diskOK == ESP_OK) {
+                if (to_sd) {//to_sd = true -> save to /sdcard
+                    if (mntOK != ESP_OK) mntOK = esp_vfs_fat_sdmmc_mount(sdPath, &host, &slot_config, &mount_config, &card);
+                    farg.devMnt = mntOK;
+                    strcpy(farg.devPath, sdPath);
+                } else {//to_sd = false -> save to /spiflash
+                    if (diskOK != ESP_OK) diskOK = esp_vfs_fat_spiflash_mount(diskPath, diskPart, &mount_disk, &s_wl_handle);
                     farg.devMnt = diskOK;
+                    strcpy(farg.devPath, FTP_PATH_DEF);
+                }
+                if (farg.devMnt == ESP_OK) {
                     if (xTaskCreatePinnedToCore(&ftp_cli_task, "ftp_cli_task", 8*STACK_SIZE_1K, &farg, 8, NULL, 1) != pdPASS) {
-                        ESP_LOGE(TAGGPS, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
+                        ESP_LOGE(TAGFTP, "Error create ftp_cli_task | FreeMem %u", xPortGetFreeHeapSize());
                     } else vTaskDelay(500 / portTICK_RATE_MS);
                 }
             }

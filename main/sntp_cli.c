@@ -14,7 +14,7 @@ sntp_start = 1;
 total_task++;
 
 
-    ets_printf("[%s] Start sntp_task | FreeMem %u\n", TAGS, xPortGetFreeHeapSize());
+    ets_printf("[%s] Start sntp_client task | FreeMem %u\n", TAGS, xPortGetFreeHeapSize());
 
     char *sntp_server = (char *)arg;
 
@@ -58,7 +58,7 @@ total_task++;
 
     if (total_task) total_task--;
     sntp_start = 0;
-    ets_printf("[%s] Stop sntp_task | FreeMem %u\n", TAGS, xPortGetFreeHeapSize());
+    ets_printf("[%s] Stop sntp_client task | FreeMem %u\n", TAGS, xPortGetFreeHeapSize());
 
     vTaskDelete(NULL);
 }
