@@ -43,6 +43,7 @@
 //const char *Version = "4.5 (23.01.2020)";//Minor changes : in fmb630_client add display latitude and longitude on the ssd1306
 //const char *Version = "4.6 (23.01.2020)";//Minor changes : in tls_server add sub_ctrl_command 'gps_info'
 //const char *Version = "4.6.1 (24.01.2020)";//Minor changes : in tls_server and fmb630_client
-const char *Version = "4.7 (27.01.2020)";//Minor changes in main (read configuration file for fmb630_client)
+//const char *Version = "4.7 (27.01.2020)";//Minor changes in main (read configuration file for fmb630_client)
+const char *Version = "4.8 (27.01.2020)";//Minor changes : add ssd1306_clear_lines(y,c) , remove ssd1306_clear_lin(y)
 
 

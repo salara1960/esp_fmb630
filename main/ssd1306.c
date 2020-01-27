@@ -278,10 +278,10 @@ uint8_t i, zero[128] = {0};
             i2c_master_write_byte(cmd, 0xB0 | i, true);
 
             i2c_master_write_byte(cmd, OLED_CONTROL_BYTE_DATA_STREAM, true);
-            i2c_master_write(cmd, zero, 128, true);
+            i2c_master_write(cmd, zero, sizeof(zero), true);
 
             i2c_master_stop(cmd);
-            i2c_master_cmd_begin(SSD1306_PORT, cmd, 10/portTICK_PERIOD_MS);
+            i2c_master_cmd_begin(SSD1306_PORT, cmd, 16/portTICK_PERIOD_MS);
             i2c_cmd_link_delete(cmd);
         }
 
@@ -289,12 +289,60 @@ uint8_t i, zero[128] = {0};
     }
 }
 //-----------------------------------------------------------------------------------------
+void ssd1306_clear_lines(uint8_t cy, uint8_t cnt)
+{
+i2c_cmd_handle_t cmd;
+uint8_t i, zero[128] = {0};
+
+
+    cy--;
+    if (xSemaphoreTake(lcd_mutex, portMAX_DELAY) == pdTRUE) {
+
+
+        cmd = i2c_cmd_link_create();
+        i2c_master_start(cmd);
+        i2c_master_write_byte(cmd, (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
+
+        i2c_master_write_byte(cmd, OLED_CONTROL_BYTE_CMD_STREAM, true);
+
+        i2c_master_write_byte(cmd, OLED_CMD_SET_COLUMN_RANGE, true);
+        i2c_master_write_byte(cmd, 0, true);
+        i2c_master_write_byte(cmd, 0x7F, true);
+        i2c_master_write_byte(cmd, OLED_CMD_SET_PAGE_RANGE, true);
+        i2c_master_write_byte(cmd, cy, true);
+        i2c_master_write_byte(cmd, 0x07, true);
+
+        i2c_master_stop(cmd);
+        i2c_master_cmd_begin(SSD1306_PORT, cmd, 10/portTICK_PERIOD_MS);
+        i2c_cmd_link_delete(cmd);
+
+        for (i = cy; i < (cy + cnt); i++) {
+            cmd = i2c_cmd_link_create();
+            i2c_master_start(cmd);
+
+            i2c_master_write_byte(cmd, (OLED_I2C_ADDRESS << 1) | I2C_MASTER_WRITE, true);
+            i2c_master_write_byte(cmd, OLED_CONTROL_BYTE_CMD_SINGLE, true);
+            i2c_master_write_byte(cmd, 0xB0 | i, true);
+
+            i2c_master_write_byte(cmd, OLED_CONTROL_BYTE_DATA_STREAM, true);
+            i2c_master_write(cmd, zero, sizeof(zero), true);
+
+            i2c_master_stop(cmd);
+            i2c_master_cmd_begin(SSD1306_PORT, cmd, 16/portTICK_PERIOD_MS);
+            i2c_cmd_link_delete(cmd);
+        }
+
+        xSemaphoreGive(lcd_mutex);
+    }
+}
+//-----------------------------------------------------------------------------------------
+/*
 void ssd1306_clear_line(uint8_t cy)
 {
 i2c_cmd_handle_t cmd;
 uint8_t zero[128] = {0};
 
-    cy--;
+    --cy;
     if (xSemaphoreTake(lcd_mutex, portMAX_DELAY) == pdTRUE) {
 
         cmd = i2c_cmd_link_create();
@@ -305,16 +353,17 @@ uint8_t zero[128] = {0};
         i2c_master_write_byte(cmd, 0xB0 | cy, true);
 
         i2c_master_write_byte(cmd, OLED_CONTROL_BYTE_DATA_STREAM, true);
-        i2c_master_write(cmd, zero, 128, true);
+        i2c_master_write(cmd, zero, sizeof(zero), true);
 
         i2c_master_stop(cmd);
-        i2c_master_cmd_begin(SSD1306_PORT, cmd, 10/portTICK_PERIOD_MS);
+        i2c_master_cmd_begin(SSD1306_PORT, cmd, 16/portTICK_PERIOD_MS);
         i2c_cmd_link_delete(cmd);
 
         xSemaphoreGive(lcd_mutex);
     }
 
 }
+*/
 //-----------------------------------------------------------------------------------------
 void ssd1306_pattern()
 {

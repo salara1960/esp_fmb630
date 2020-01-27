@@ -823,7 +823,7 @@ char stz[32];
         last_send = (uint32_t)time(NULL);
 
 #ifdef SET_SSD1306
-    //ssd1306_clear_line(3); ssd1306_clear_line(4);
+    //ssd1306_clear_lines(3, 2);
     sprintf(stz, "Lati:%.8f\nLong:%.8f",
                  (float)(ntohl(gsm_info.latitude)) / 10000000,
                  (float)(ntohl(gsm_info.longitude)) / 10000000);
@@ -1366,7 +1366,7 @@ uint32_t stop_ses  = start_ses;
                                     tmr_ack = get_tmr(wait_ack_sec);//start wait ack timer
                                 }
 #ifdef SET_SSD1306
-                                ssd1306_clear_line(6);
+                                ssd1306_clear_lines(6, 1);
                                 vTaskDelay(2 / portTICK_PERIOD_MS);
                                 i = sprintf(screen, "%u", cnt_send);
                                 ssd1306_text_xy(screen, ssd1306_calcx(i), 6);
@@ -1519,10 +1519,7 @@ out_of_job:
 
 
 #ifdef SET_SSD1306
-        ssd1306_clear_line(3);
-        ssd1306_clear_line(4);
-        ssd1306_clear_line(5);
-        ssd1306_clear_line(6);
+        ssd1306_clear_lines(3, 4);
 #endif
 
         if (err == 0xff) print_msg(1, TAGGPS, "!!!   Jump error   !!!\n");
