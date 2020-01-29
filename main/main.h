@@ -145,7 +145,10 @@
 #define GPIO_WIFI_PIN     4
 #define GPIO_WMODE_PIN   15 //1-STA  0-AP
 #define GPIO_DELIT_PIN    2 //delete all files from /spiflash
-#define GPIO_RESTART_PIN 35
+
+#define GPIO_RESTART_PIN 25//35
+#define GPIO_RESTART_PIN_SEL (1<<GPIO_RESTART_PIN)
+
 
 #define ADC1_TEST_CHANNEL (6) //6 channel connect to pin34
 #define ADC1_TEST_PIN    34 //pin34

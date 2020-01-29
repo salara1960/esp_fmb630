@@ -104,6 +104,17 @@ static bool scr_ini_done = false;
     xSemaphoreHandle rec_mutex;
     xSemaphoreHandle mirror_mutex;
 #endif
+
+#ifdef SET_ISR_PIN
+    static xQueueHandle q_rst = NULL;
+
+    static void IRAM_ATTR gpio_isr_rst(void *arg)
+    {
+        uint8_t byte = 1;
+        xQueueSendFromISR(q_rst, &byte, NULL);
+    }
+#endif
+
 //***************************************************************************************************************
 
 esp_err_t read_param(char *param_name, void *param_data, size_t len);
@@ -825,7 +836,7 @@ void app_main()
 
     if (diskOK == ESP_OK) {
         bool delit = check_pin(GPIO_DELIT_PIN);
-        print_msg(1, TAGFATD, "=== GPIO_DELIT_PIN(%d)=%d ===\n", GPIO_DELIT_PIN, delit);
+        if (!delit) print_msg(1, TAGFATD, "=== GPIO_DELIT_PIN(%d)=%d ===\n", GPIO_DELIT_PIN, delit);
 
         sprintf(line, "%s/", diskPath);
         bool yes = print_dir(TAGFATD, line);
@@ -922,9 +933,22 @@ void app_main()
 #endif
 
 
-/**/
+#ifdef SET_ISR_PIN
+    gpio_config_t io_conf = {
+        .intr_type    = GPIO_PIN_INTR_POSEDGE,//GPIO_INTR_NEGEDGE,//GPIO_INTR_ANYEDGE,//GPIO_PIN_INTR_POSEDGE,//interrupt of rising edge
+        .pull_up_en   = 0,
+        .pull_down_en = 1,
+        .pin_bit_mask = GPIO_RESTART_PIN_SEL,//bit mask of the pins
+        .mode         = GPIO_MODE_INPUT,
+    };
+    gpio_config(&io_conf);
+    uint8_t byte_rst = 0;
+    q_rst = xQueueCreate(2, sizeof(uint8_t));
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(GPIO_RESTART_PIN, gpio_isr_rst, NULL);
+#else
     check_pin(GPIO_RESTART_PIN);
-/**/
+#endif
 
 
     while (!restart_flag) {//main loop
@@ -1012,18 +1036,30 @@ void app_main()
         }
 #endif
 
-/**/
-       if (gpio_get_level(GPIO_RESTART_PIN)) {
-            print_msg(1, TAG, "!!! RESTART_PIN is PRESSED !!!\n");
+#ifdef SET_ISR_PIN
+        if (xQueueReceive(q_rst, &byte_rst, 10/portTICK_RATE_MS) == pdTRUE) {
+            if (byte_rst) {
+                restart_flag = byte_rst;
+                break;
+            }
+        }
+#else
+        if (gpio_get_level(GPIO_RESTART_PIN)) {
             restart_flag = 1;
             break;
         }
-/**/
+#endif
+
 
     }//while (!restart_flag)
 
+#ifdef SET_SSD1306
+    ssd1306_clear();
+#endif
+    print_msg(1, TAG, "!!! RESTART_PIN is PRESSED !!!\n");
 
-    uint8_t cnt = 20;
+
+    uint8_t cnt = 30;
     print_msg(1, TAG, "Waiting for all task closed...%d sec.\n", cnt/10);
     while (total_task) {
         cnt--; if (!cnt) break;
@@ -1049,7 +1085,7 @@ void app_main()
 
     if (macs) free(macs);
 
-    print_msg(1, TAG, "Waiting wifi stop...\n\n");
+    ets_printf("[%s] Waiting wifi stop...\n\n", TAG);
 
     vTaskDelay(2000 / portTICK_RATE_MS);
 

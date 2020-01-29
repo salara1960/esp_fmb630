@@ -1,5 +1,6 @@
 //#define UDP_SEND_BCAST
 
+#define SET_ISR_PIN
 #define SET_FTP_CLI
 #define SET_TLS_SRV
 #define SET_FATDISK
