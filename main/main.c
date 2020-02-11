@@ -15,19 +15,19 @@ static const char *TAGN = "NVS";
 static const char *TAGT = "VFS";
 static const char *TAGW = "WIFI";
 #ifdef SET_SDCARD
-static const char *TAGFAT = "CARD";
+    static const char *TAGFAT = "CARD";
 #endif
 static const char *sdPath = "/sdcard";
 static const char *sdConf = "conf.txt";
 esp_err_t mntOK = ESP_FAIL;
 
 #ifdef SET_FATDISK
-static const char *TAGFATD = "DISK";
-static const char *diskPath = "/spiflash";
-static const char *diskPart = "disk";
-static wl_handle_t s_wl_handle = -1;//WL_INVALID_HANDLE;
-static size_t fatfs_size = 0;
-esp_err_t diskOK = ESP_FAIL;
+    static const char *TAGFATD = "DISK";
+    static const char *diskPath = "/spiflash";
+    static const char *diskPart = "disk";
+    static wl_handle_t s_wl_handle = -1;//WL_INVALID_HANDLE;
+    static size_t fatfs_size = 0;
+    esp_err_t diskOK = ESP_FAIL;
 #endif
 
 #if defined(SET_SDCARD) || defined(SET_FATDISK)
@@ -117,8 +117,8 @@ static bool scr_ini_done = false;
 
 //***************************************************************************************************************
 
-esp_err_t read_param(char *param_name, void *param_data, size_t len);
-esp_err_t save_param(char *param_name, void *param_data, size_t len);
+esp_err_t read_param(const char *param_name, void *param_data, size_t len);
+esp_err_t save_param(const char *param_name, void *param_data, size_t len);
 
 //***************************************************************************************************************
 
@@ -165,11 +165,11 @@ size_t len = BUF_SIZE;//1024
             sz += vsnprintf(st + dl, len - dl, fmt, args);
             printf(st);
             va_end(args);
-#ifdef SET_NET_LOG
-            if (tcpCli >= 0) putMsg(st);
-#endif
             xSemaphoreGive(prn_mutex);
         }
+#ifdef SET_NET_LOG
+        if (tcpCli >= 0) putMsg(st);
+#endif        
         free(st);
     }
 }
@@ -341,7 +341,7 @@ void initialize_wifi(wifi_mode_t w_mode)
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
          if (w_mode == WIFI_MODE_STA) esp_netif_create_default_wifi_sta();
-    else if (w_mode == WIFI_MODE_AP) esp_netif_create_default_wifi_ap();
+    else if (w_mode == WIFI_MODE_AP)  esp_netif_create_default_wifi_ap();
     else {
         ets_printf("[%s] unknown wi-fi mode - %d | FreeMem %u\n", TAGW, w_mode, xPortGetFreeHeapSize());
         return;
@@ -364,7 +364,7 @@ void initialize_wifi(wifi_mode_t w_mode)
             wifi_config_t wifi_config;
             memset((uint8_t *)&wifi_config, 0, sizeof(wifi_config_t));
             if (wifi_param_ready) {
-                memcpy(wifi_config.sta.ssid, work_ssid, strlen(work_ssid));
+                memcpy(wifi_config.sta.ssid,     work_ssid, strlen(work_ssid));
                 memcpy(wifi_config.sta.password, work_pass, strlen(work_pass));
                 ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
                 ets_printf("[%s] WIFI_MODE - STA: '%s':'%s'\n",
@@ -380,7 +380,7 @@ void initialize_wifi(wifi_mode_t w_mode)
             wifi_config_t wifi_configap;
             memset((uint8_t *)&wifi_configap, 0, sizeof(wifi_config_t));
             wifi_configap.ap.ssid_len = strlen(sta_mac);
-            memcpy(wifi_configap.ap.ssid, sta_mac, wifi_configap.ap.ssid_len);
+            memcpy(wifi_configap.ap.ssid,     sta_mac,   wifi_configap.ap.ssid_len);
             memcpy(wifi_configap.ap.password, work_pass, strlen(work_pass));
             wifi_configap.ap.channel = 6;
             wifi_configap.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;//WIFI_AUTH_WPA_WPA2_PSK
@@ -395,7 +395,7 @@ void initialize_wifi(wifi_mode_t w_mode)
     }
 }
 //********************************************************************************************************************
-esp_err_t read_param(char *param_name, void *param_data, size_t len)//, int8_t type)
+esp_err_t read_param(const char *param_name, void *param_data, size_t len)//, int8_t type)
 {
 nvs_handle mhd;
 
@@ -413,7 +413,7 @@ nvs_handle mhd;
     return err;
 }
 //--------------------------------------------------------------------------------------------------
-esp_err_t save_param(char *param_name, void *param_data, size_t len)
+esp_err_t save_param(const char *param_name, void *param_data, size_t len)
 {
 nvs_handle mhd;
 

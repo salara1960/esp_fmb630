@@ -45,6 +45,7 @@
 //const char *Version = "4.6.1 (24.01.2020)";//Minor changes : in tls_server and fmb630_client
 //const char *Version = "4.7 (27.01.2020)";//Minor changes in main (read configuration file for fmb630_client)
 //const char *Version = "4.8 (27.01.2020)";//Minor changes : add ssd1306_clear_lines(y,c) , remove ssd1306_clear_lin(y)
-const char *Version = "4.9 (29.01.2020)";//Major changes : used interrupt for event pin_restart
+//const char *Version = "4.9 (29.01.2020)";//Major changes : used interrupt for event pin_restart
+const char *Version = "4.9.1 (11.02.2020)";//Minor changes in nvs_functions
 
 
